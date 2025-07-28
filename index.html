@@ -575,34 +575,71 @@
             const [accessToken, setAccessToken] = useState(null);
 
             useEffect(() => {
-                // Check for authorization code in URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const code = urlParams.get('code');
+                // Check for authorization code in URL - enhanced for mobile Safari
+                const checkForAuthCode = () => {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const code = urlParams.get('code');
+                    
+                    console.log('Checking for auth code on page load...');
+                    console.log('Current URL:', window.location.href);
+                    console.log('URL search:', window.location.search);
+                    console.log('Found code:', code);
+                    console.log('Current accessToken:', accessToken);
+                    
+                    if (code && !accessToken) {
+                        console.log('Processing auth code:', code);
+                        handleAuthCode(code);
+                    }
+                };
                 
-                if (code && !accessToken) {
-                    handleAuthCode(code);
-                }
-            }, []);
+                // Run immediately
+                checkForAuthCode();
+                
+                // Also run after a short delay for mobile Safari
+                const timer = setTimeout(checkForAuthCode, 100);
+                
+                return () => clearTimeout(timer);
+            }, [accessToken]);
 
             async function handleAuthCode(code) {
+                console.log('handleAuthCode called with:', code);
                 setLoading(true);
                 setMessage('');
                 
                 try {
+                    console.log('Exchanging code for token...');
                     const token = await exchangeCodeForToken(code);
+                    console.log('Got token:', token ? 'SUCCESS' : 'FAILED');
                     setAccessToken(token);
                     
                     // Clean up URL
+                    console.log('Cleaning up URL...');
                     window.history.replaceState({}, document.title, window.location.pathname);
                     
                     // Fetch workouts
+                    console.log('Fetching workouts...');
                     const workoutData = await fetchWorkouts(token);
+                    console.log('Got workouts:', workoutData.length);
                     onDataLoaded(workoutData, 'API');
                     setMessage(`Successfully loaded ${workoutData.length} workouts from API`);
                 } catch (err) {
+                    console.error('Auth error:', err);
                     setMessage('Failed to authenticate or fetch data: ' + err.message);
                 } finally {
                     setLoading(false);
+                }
+            }
+
+            function manualAuthCheck() {
+                console.log('Manual auth check triggered');
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+                console.log('Manual check - found code:', code);
+                
+                if (code) {
+                    handleAuthCode(code);
+                } else {
+                    setMessage('No authorization code found in URL. Try the OAuth flow again.');
                 }
             }
 
@@ -716,8 +753,15 @@
                                     <a href={getAuthUrl()} className="auth-button">
                                         Connect to Concept2 Dev
                                     </a>
+                                    <button 
+                                        onClick={manualAuthCheck}
+                                        className="upload-button"
+                                        style={{marginLeft: '10px', marginTop: '10px', display: 'block'}}
+                                    >
+                                        Check for Auth Code (Mobile Safari Fix)
+                                    </button>
                                     <div style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
-                                        Debug: After auth, check browser console (F12) for detailed logs
+                                        If redirected back but stuck here, click "Check for Auth Code"
                                     </div>
                                 </div>
                             )}
