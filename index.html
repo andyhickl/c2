@@ -505,32 +505,55 @@
         async function exchangeCodeForToken(code) {
             try {
                 console.log('Exchanging code for token...', code);
-                const response = await fetch(`${CONFIG.BASE_URL}/api/oauth/token`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        grant_type: 'authorization_code',
-                        client_id: CONFIG.CLIENT_ID,
-                        client_secret: CONFIG.CLIENT_SECRET,
-                        code: code,
-                        redirect_uri: CONFIG.REDIRECT_URI
-                    })
-                });
                 
-                console.log('Token response status:', response.status);
-                console.log('Token response headers:', [...response.headers.entries()]);
+                // Try multiple possible token endpoints
+                const endpoints = [
+                    '/token',
+                    '/access_token', 
+                    '/oauth/access_token',
+                    '/api/token',
+                    '/oauth/token',
+                    '/api/oauth/token'
+                ];
                 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Token exchange failed:', response.status, errorText);
-                    throw new Error(`Token exchange failed: ${response.status} - ${errorText}`);
+                let lastError = null;
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        console.log(`Trying endpoint: ${endpoint}`);
+                        const response = await fetch(`${CONFIG.BASE_URL}${endpoint}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: new URLSearchParams({
+                                grant_type: 'authorization_code',
+                                client_id: CONFIG.CLIENT_ID,
+                                client_secret: CONFIG.CLIENT_SECRET,
+                                code: code,
+                                redirect_uri: CONFIG.REDIRECT_URI
+                            })
+                        });
+                        
+                        console.log(`${endpoint} response status:`, response.status);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log('Token exchange successful with endpoint:', endpoint, data);
+                            return data.access_token;
+                        } else {
+                            const errorText = await response.text();
+                            console.log(`${endpoint} failed:`, response.status, errorText.substring(0, 200));
+                            lastError = `${endpoint}: ${response.status}`;
+                        }
+                    } catch (err) {
+                        console.log(`${endpoint} error:`, err.message);
+                        lastError = `${endpoint}: ${err.message}`;
+                    }
                 }
                 
-                const data = await response.json();
-                console.log('Token exchange successful:', data);
-                return data.access_token;
+                throw new Error(`All token endpoints failed. Last error: ${lastError}`);
+                
             } catch (error) {
                 console.error('Token exchange error:', error);
                 throw error;
