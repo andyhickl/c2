@@ -505,12 +505,12 @@
         async function exchangeCodeForToken(code) {
             try {
                 console.log('Exchanging code for token...', code);
-                const response = await fetch(`${CONFIG.BASE_URL}/oauth/token`, {
+                const response = await fetch(`${CONFIG.BASE_URL}/api/oauth/token`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: JSON.stringify({
+                    body: new URLSearchParams({
                         grant_type: 'authorization_code',
                         client_id: CONFIG.CLIENT_ID,
                         client_secret: CONFIG.CLIENT_SECRET,
