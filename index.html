@@ -290,7 +290,7 @@
         const CONFIG = {
             CLIENT_ID: 'EourZV4an5ms0stQVwphmaZao96UV5jZMpAWH67K',
             CLIENT_SECRET: 'Fh6Lr8R61UDAnrYoB90cf1fZkILgjnbfQjCd6Dfd',
-            REDIRECT_URI: 'http://localhost:3000/callback',
+            REDIRECT_URI: 'https://andyhickl.github.io/c2/',
             BASE_URL: 'https://log-dev.concept2.com',
             SCOPES: 'user:read,results:read'
         };
@@ -504,6 +504,7 @@
 
         async function exchangeCodeForToken(code) {
             try {
+                console.log('Exchanging code for token...', code);
                 const response = await fetch(`${CONFIG.BASE_URL}/oauth/token`, {
                     method: 'POST',
                     headers: {
@@ -518,11 +519,17 @@
                     })
                 });
                 
+                console.log('Token response status:', response.status);
+                console.log('Token response headers:', [...response.headers.entries()]);
+                
                 if (!response.ok) {
-                    throw new Error(`Token exchange failed: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('Token exchange failed:', response.status, errorText);
+                    throw new Error(`Token exchange failed: ${response.status} - ${errorText}`);
                 }
                 
                 const data = await response.json();
+                console.log('Token exchange successful:', data);
                 return data.access_token;
             } catch (error) {
                 console.error('Token exchange error:', error);
@@ -532,6 +539,7 @@
 
         async function fetchWorkouts(accessToken) {
             try {
+                console.log('Fetching workouts with token:', accessToken.substring(0, 10) + '...');
                 const response = await fetch(`${CONFIG.BASE_URL}/api/users/me/results`, {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
@@ -539,12 +547,18 @@
                     }
                 });
                 
+                console.log('Workouts response status:', response.status);
+                console.log('Workouts response headers:', [...response.headers.entries()]);
+                
                 if (!response.ok) {
-                    throw new Error(`Failed to fetch workouts: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('Failed to fetch workouts:', response.status, errorText);
+                    throw new Error(`Failed to fetch workouts: ${response.status} - ${errorText}`);
                 }
                 
                 const data = await response.json();
-                return data.data || [];
+                console.log('Workouts data:', data);
+                return data.data || data.results || data || [];
             } catch (error) {
                 console.error('Fetch workouts error:', error);
                 throw error;
@@ -701,6 +715,9 @@
                                     <a href={getAuthUrl()} className="auth-button">
                                         Connect to Concept2 Dev
                                     </a>
+                                    <div style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
+                                        Debug: After auth, check browser console (F12) for detailed logs
+                                    </div>
                                 </div>
                             )}
                             {accessToken && (
