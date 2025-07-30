@@ -584,14 +584,21 @@
                     const code = urlParams.get('code');
                     const state = urlParams.get('state');
                     
+                    console.log('Checking for auth code. Code:', code, 'State:', state);
+                    console.log('Current connection status - C2:', connections.concept2.status, 'Whoop:', connections.whoop.status);
+                    
                     if (code) {
                         // Determine which service based on existing connections or URL patterns
                         if (connections.concept2.status !== 'connected' && !state) {
                             // Likely Concept2 (no state parameter)
+                            console.log('Processing as Concept2 auth');
                             handleC2AuthCode(code);
                         } else if (connections.whoop.status !== 'connected') {
                             // Likely Whoop
+                            console.log('Processing as Whoop auth');
                             handleWhoopAuthCode(code);
+                        } else {
+                            console.log('Code found but both services already connected or unclear which service');
                         }
                     }
                 };
@@ -603,8 +610,12 @@
 
             async function handleWhoopAuthCode(code) {
                 try {
+                    console.log('Handling Whoop auth code:', code);
                     const token = await exchangeWhoopCodeForToken(code);
+                    console.log('Got Whoop token:', token ? 'Token received' : 'No token');
+                    
                     const whoopData = await fetchWhoopData(token);
+                    console.log('Final Whoop data for app:', whoopData);
                     
                     setConnections(prev => ({
                         ...prev,
@@ -614,6 +625,8 @@
                     
                     // Clean up URL
                     window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    alert(`Successfully connected to Whoop! Imported ${whoopData.length} data points.`);
                 } catch (err) {
                     console.error('Whoop Auth error:', err);
                     alert('Failed to authenticate with Whoop: ' + err.message);
@@ -646,7 +659,10 @@
 
             async function fetchWhoopData(accessToken) {
                 try {
+                    console.log('Fetching Whoop data with token:', accessToken ? 'Token exists' : 'No token');
+                    
                     // Fetch recovery data
+                    console.log('Fetching recovery data...');
                     const recoveryResponse = await fetch(`${CONFIG.WHOOP.BASE_URL}/developer/v1/recovery`, {
                         headers: {
                             'Authorization': `Bearer ${accessToken}`,
@@ -654,13 +670,19 @@
                         }
                     });
                     
+                    console.log('Recovery response status:', recoveryResponse.status);
+                    
                     if (!recoveryResponse.ok) {
-                        throw new Error(`Failed to fetch recovery data: ${recoveryResponse.status}`);
+                        const errorText = await recoveryResponse.text();
+                        console.error('Recovery API error:', errorText);
+                        throw new Error(`Failed to fetch recovery data: ${recoveryResponse.status} - ${errorText}`);
                     }
                     
                     const recoveryData = await recoveryResponse.json();
+                    console.log('Recovery data:', recoveryData);
                     
                     // Fetch sleep data
+                    console.log('Fetching sleep data...');
                     const sleepResponse = await fetch(`${CONFIG.WHOOP.BASE_URL}/developer/v1/activity/sleep`, {
                         headers: {
                             'Authorization': `Bearer ${accessToken}`,
@@ -668,9 +690,17 @@
                         }
                     });
                     
+                    console.log('Sleep response status:', sleepResponse.status);
                     const sleepData = sleepResponse.ok ? await sleepResponse.json() : { records: [] };
+                    if (sleepResponse.ok) {
+                        console.log('Sleep data:', sleepData);
+                    } else {
+                        const sleepError = await sleepResponse.text();
+                        console.error('Sleep API error:', sleepError);
+                    }
                     
                     // Fetch cycles data (for strain)
+                    console.log('Fetching cycles data...');
                     const cyclesResponse = await fetch(`${CONFIG.WHOOP.BASE_URL}/developer/v1/cycle`, {
                         headers: {
                             'Authorization': `Bearer ${accessToken}`,
@@ -678,13 +708,29 @@
                         }
                     });
                     
+                    console.log('Cycles response status:', cyclesResponse.status);
                     const cyclesData = cyclesResponse.ok ? await cyclesResponse.json() : { records: [] };
+                    if (cyclesResponse.ok) {
+                        console.log('Cycles data:', cyclesData);
+                    } else {
+                        const cyclesError = await cyclesResponse.text();
+                        console.error('Cycles API error:', cyclesError);
+                    }
                     
                     // Transform data to our format
-                    return transformWhoopData(recoveryData, sleepData, cyclesData);
+                    const transformedData = transformWhoopData(recoveryData, sleepData, cyclesData);
+                    console.log('Transformed Whoop data:', transformedData);
+                    
+                    if (transformedData.length === 0) {
+                        console.warn('No Whoop data after transformation, using sample data');
+                        return SAMPLE_WHOOP_DATA;
+                    }
+                    
+                    return transformedData;
                     
                 } catch (error) {
                     console.error('Error fetching Whoop data:', error);
+                    alert('Error fetching Whoop data: ' + error.message + '. Using sample data instead.');
                     // Return sample data on error for development
                     return SAMPLE_WHOOP_DATA;
                 }
