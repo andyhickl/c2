@@ -598,17 +598,27 @@
                     }
                     
                     if (code) {
-                        // Determine which service based on existing connections or URL patterns
-                        if (connections.concept2.status !== 'connected' && !state) {
+                        // Determine which service based on existing connections or state parameter
+                        if (state && connections.whoop.status !== 'connected') {
+                            // This is Whoop - verify state parameter
+                            const storedState = localStorage.getItem('whoop_oauth_state');
+                            console.log('Received state:', state, 'Stored state:', storedState);
+                            
+                            if (state !== storedState) {
+                                alert('Invalid state parameter - possible security issue');
+                                localStorage.removeItem('whoop_oauth_state');
+                                return;
+                            }
+                            
+                            console.log('Processing as Whoop auth');
+                            localStorage.removeItem('whoop_oauth_state'); // Clean up
+                            handleWhoopAuthCode(code);
+                        } else if (connections.concept2.status !== 'connected' && !state) {
                             // Likely Concept2 (no state parameter)
                             console.log('Processing as Concept2 auth');
                             handleC2AuthCode(code);
-                        } else if (connections.whoop.status !== 'connected') {
-                            // Likely Whoop
-                            console.log('Processing as Whoop auth');
-                            handleWhoopAuthCode(code);
                         } else {
-                            console.log('Code found but both services already connected or unclear which service');
+                            console.log('Code found but unclear which service or services already connected');
                         }
                     }
                 };
@@ -929,14 +939,23 @@
                 window.location.href = `${CONFIG.CONCEPT2.BASE_URL}/oauth/authorize?${params}`;
             }
 
-            // Whoop OAuth - corrected implementation
+            // Whoop OAuth - corrected implementation with state parameter
             async function handleWhoopAuth() {
+                // Generate a random state parameter for security
+                const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                
+                // Store the state in localStorage to verify it later
+                localStorage.setItem('whoop_oauth_state', state);
+                
                 const params = new URLSearchParams({
                     client_id: CONFIG.WHOOP.CLIENT_ID,
                     response_type: 'code',
                     redirect_uri: CONFIG.WHOOP.REDIRECT_URI,
-                    scope: CONFIG.WHOOP.SCOPES
+                    scope: CONFIG.WHOOP.SCOPES,
+                    state: state
                 });
+                
+                console.log('Redirecting to Whoop with state:', state);
                 window.location.href = `${CONFIG.WHOOP.BASE_URL}/oauth/oauth2/auth?${params}`;
             }
 
@@ -1033,8 +1052,10 @@
                         </button>
                         <button 
                             onClick={() => {
+                                const testState = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
                                 console.log('Testing Whoop auth redirect...');
-                                console.log('Redirect URL will be:', `${CONFIG.WHOOP.BASE_URL}/oauth/oauth2/auth?client_id=${CONFIG.WHOOP.CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(CONFIG.WHOOP.REDIRECT_URI)}&scope=${encodeURIComponent(CONFIG.WHOOP.SCOPES)}`);
+                                console.log('Test state:', testState);
+                                console.log('Redirect URL will be:', `${CONFIG.WHOOP.BASE_URL}/oauth/oauth2/auth?client_id=${CONFIG.WHOOP.CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(CONFIG.WHOOP.REDIRECT_URI)}&scope=${encodeURIComponent(CONFIG.WHOOP.SCOPES)}&state=${testState}`);
                             }}
                             className="upload-button"
                             style={{fontSize: '12px', padding: '4px 8px'}}
