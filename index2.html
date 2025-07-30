@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C2 Workout Tracker v2.0</title>
+    <title>HHT v2.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -330,29 +330,113 @@
             WHOOP: {
                 CLIENT_ID: 'YOUR_WHOOP_CLIENT_ID', // You'll need to register with Whoop
                 CLIENT_SECRET: 'YOUR_WHOOP_CLIENT_SECRET',
-                REDIRECT_URI: 'https://andyhickl.github.io/c2/',
+                REDIRECT_URI: 'https://andyhickl.github.io/c2/index2.html',
                 BASE_URL: 'https://api.prod.whoop.com',
                 SCOPES: 'read:recovery read:sleep read:workout'
             }
         };
 
-        // Sample data for demonstration
+        // Sample data for demonstration - Full July 2025
         const SAMPLE_WHOOP_DATA = [
-            { date: '2025-01-15', recovery: 85, sleep_score: 92, strain: 12.5 },
-            { date: '2025-01-16', recovery: 78, sleep_score: 88, strain: 15.2 },
-            { date: '2025-01-17', recovery: 92, sleep_score: 95, strain: 8.3 }
+            { date: '2025-07-01', recovery: 85, sleep_score: 92, strain: 12.5 },
+            { date: '2025-07-02', recovery: 78, sleep_score: 88, strain: 15.2 },
+            { date: '2025-07-03', recovery: 92, sleep_score: 95, strain: 8.3 },
+            { date: '2025-07-04', recovery: 76, sleep_score: 84, strain: 16.8 },
+            { date: '2025-07-05', recovery: 88, sleep_score: 91, strain: 11.2 },
+            { date: '2025-07-06', recovery: 82, sleep_score: 87, strain: 13.4 },
+            { date: '2025-07-07', recovery: 79, sleep_score: 89, strain: 14.6 },
+            { date: '2025-07-08', recovery: 94, sleep_score: 96, strain: 7.8 },
+            { date: '2025-07-09', recovery: 86, sleep_score: 90, strain: 12.1 },
+            { date: '2025-07-10', recovery: 81, sleep_score: 85, strain: 14.3 },
+            { date: '2025-07-11', recovery: 77, sleep_score: 83, strain: 16.5 },
+            { date: '2025-07-12', recovery: 89, sleep_score: 93, strain: 10.7 },
+            { date: '2025-07-13', recovery: 84, sleep_score: 88, strain: 13.2 },
+            { date: '2025-07-14', recovery: 91, sleep_score: 94, strain: 9.1 },
+            { date: '2025-07-15', recovery: 75, sleep_score: 82, strain: 17.2 },
+            { date: '2025-07-16', recovery: 83, sleep_score: 89, strain: 12.8 },
+            { date: '2025-07-17', recovery: 87, sleep_score: 91, strain: 11.6 },
+            { date: '2025-07-18', recovery: 80, sleep_score: 86, strain: 14.9 },
+            { date: '2025-07-19', recovery: 93, sleep_score: 97, strain: 8.4 },
+            { date: '2025-07-20', recovery: 78, sleep_score: 84, strain: 15.7 },
+            { date: '2025-07-21', recovery: 85, sleep_score: 90, strain: 12.3 },
+            { date: '2025-07-22', recovery: 82, sleep_score: 87, strain: 13.8 },
+            { date: '2025-07-23', recovery: 88, sleep_score: 92, strain: 10.9 },
+            { date: '2025-07-24', recovery: 74, sleep_score: 81, strain: 17.6 },
+            { date: '2025-07-25', recovery: 90, sleep_score: 94, strain: 9.5 },
+            { date: '2025-07-26', recovery: 86, sleep_score: 89, strain: 12.7 },
+            { date: '2025-07-27', recovery: 81, sleep_score: 85, strain: 14.1 },
+            { date: '2025-07-28', recovery: 87, sleep_score: 91, strain: 11.4 },
+            { date: '2025-07-29', recovery: 79, sleep_score: 86, strain: 15.3 },
+            { date: '2025-07-30', recovery: 92, sleep_score: 95, strain: 8.7 },
+            { date: '2025-07-31', recovery: 84, sleep_score: 88, strain: 13.1 }
         ];
 
         const SAMPLE_APPLE_HEALTH_DATA = [
-            { date: '2025-01-15', steps: 8542, step_length: 0.78, double_support: 0.24, walking_speed: 1.32 },
-            { date: '2025-01-16', steps: 12890, step_length: 0.82, double_support: 0.22, walking_speed: 1.45 },
-            { date: '2025-01-17', steps: 6234, step_length: 0.75, double_support: 0.28, walking_speed: 1.18 }
+            { date: '2025-07-01', steps: 8542, step_length: 0.78, double_support: 0.24, walking_speed: 1.32 },
+            { date: '2025-07-02', steps: 12890, step_length: 0.82, double_support: 0.22, walking_speed: 1.45 },
+            { date: '2025-07-03', steps: 6234, step_length: 0.75, double_support: 0.28, walking_speed: 1.18 },
+            { date: '2025-07-04', steps: 15678, step_length: 0.84, double_support: 0.20, walking_speed: 1.52 },
+            { date: '2025-07-05', steps: 9876, step_length: 0.79, double_support: 0.25, walking_speed: 1.35 },
+            { date: '2025-07-06', steps: 11432, step_length: 0.81, double_support: 0.23, walking_speed: 1.41 },
+            { date: '2025-07-07', steps: 7654, step_length: 0.76, double_support: 0.27, walking_speed: 1.24 },
+            { date: '2025-07-08', steps: 13245, step_length: 0.83, double_support: 0.21, walking_speed: 1.48 },
+            { date: '2025-07-09', steps: 10567, step_length: 0.80, double_support: 0.24, walking_speed: 1.37 },
+            { date: '2025-07-10', steps: 8901, step_length: 0.77, double_support: 0.26, walking_speed: 1.29 },
+            { date: '2025-07-11', steps: 14321, step_length: 0.85, double_support: 0.19, walking_speed: 1.55 },
+            { date: '2025-07-12', steps: 9234, step_length: 0.78, double_support: 0.25, walking_speed: 1.33 },
+            { date: '2025-07-13', steps: 11876, step_length: 0.82, double_support: 0.22, walking_speed: 1.43 },
+            { date: '2025-07-14', steps: 6789, step_length: 0.74, double_support: 0.29, walking_speed: 1.15 },
+            { date: '2025-07-15', steps: 16543, step_length: 0.86, double_support: 0.18, walking_speed: 1.58 },
+            { date: '2025-07-16', steps: 10123, step_length: 0.79, double_support: 0.24, walking_speed: 1.36 },
+            { date: '2025-07-17', steps: 12456, step_length: 0.81, double_support: 0.23, walking_speed: 1.42 },
+            { date: '2025-07-18', steps: 8765, step_length: 0.77, double_support: 0.26, walking_speed: 1.28 },
+            { date: '2025-07-19', steps: 13789, step_length: 0.84, double_support: 0.20, walking_speed: 1.49 },
+            { date: '2025-07-20', steps: 9543, step_length: 0.78, double_support: 0.25, walking_speed: 1.34 },
+            { date: '2025-07-21', steps: 11234, step_length: 0.80, double_support: 0.23, walking_speed: 1.39 },
+            { date: '2025-07-22', steps: 7890, step_length: 0.76, double_support: 0.27, walking_speed: 1.26 },
+            { date: '2025-07-23', steps: 14567, step_length: 0.85, double_support: 0.19, walking_speed: 1.54 },
+            { date: '2025-07-24', steps: 10876, step_length: 0.79, double_support: 0.24, walking_speed: 1.38 },
+            { date: '2025-07-25', steps: 12789, step_length: 0.82, double_support: 0.22, walking_speed: 1.44 },
+            { date: '2025-07-26', steps: 8432, step_length: 0.77, double_support: 0.26, walking_speed: 1.30 },
+            { date: '2025-07-27', steps: 13456, step_length: 0.83, double_support: 0.21, walking_speed: 1.47 },
+            { date: '2025-07-28', steps: 9765, step_length: 0.78, double_support: 0.25, walking_speed: 1.35 },
+            { date: '2025-07-29', steps: 11654, step_length: 0.81, double_support: 0.23, walking_speed: 1.40 },
+            { date: '2025-07-30', steps: 7321, step_length: 0.75, double_support: 0.28, walking_speed: 1.22 },
+            { date: '2025-07-31', steps: 15234, step_length: 0.84, double_support: 0.20, walking_speed: 1.51 }
         ];
 
         const SAMPLE_TREMOR_DATA = [
-            { date: '2025-01-15', tremor_score: 2.1, dyskinesia_risk: 'low' },
-            { date: '2025-01-16', tremor_score: 3.8, dyskinesia_risk: 'medium' },
-            { date: '2025-01-17', tremor_score: 1.2, dyskinesia_risk: 'low' }
+            { date: '2025-07-01', tremor_score: 2.1, dyskinesia_risk: 'low' },
+            { date: '2025-07-02', tremor_score: 3.8, dyskinesia_risk: 'medium' },
+            { date: '2025-07-03', tremor_score: 1.2, dyskinesia_risk: 'low' },
+            { date: '2025-07-04', tremor_score: 4.5, dyskinesia_risk: 'high' },
+            { date: '2025-07-05', tremor_score: 2.7, dyskinesia_risk: 'low' },
+            { date: '2025-07-06', tremor_score: 3.2, dyskinesia_risk: 'medium' },
+            { date: '2025-07-07', tremor_score: 1.8, dyskinesia_risk: 'low' },
+            { date: '2025-07-08', tremor_score: 0.9, dyskinesia_risk: 'low' },
+            { date: '2025-07-09', tremor_score: 3.6, dyskinesia_risk: 'medium' },
+            { date: '2025-07-10', tremor_score: 2.4, dyskinesia_risk: 'low' },
+            { date: '2025-07-11', tremor_score: 4.2, dyskinesia_risk: 'high' },
+            { date: '2025-07-12', tremor_score: 1.5, dyskinesia_risk: 'low' },
+            { date: '2025-07-13', tremor_score: 3.1, dyskinesia_risk: 'medium' },
+            { date: '2025-07-14', tremor_score: 2.0, dyskinesia_risk: 'low' },
+            { date: '2025-07-15', tremor_score: 4.8, dyskinesia_risk: 'high' },
+            { date: '2025-07-16', tremor_score: 2.9, dyskinesia_risk: 'low' },
+            { date: '2025-07-17', tremor_score: 3.4, dyskinesia_risk: 'medium' },
+            { date: '2025-07-18', tremor_score: 1.7, dyskinesia_risk: 'low' },
+            { date: '2025-07-19', tremor_score: 1.1, dyskinesia_risk: 'low' },
+            { date: '2025-07-20', tremor_score: 3.9, dyskinesia_risk: 'medium' },
+            { date: '2025-07-21', tremor_score: 2.6, dyskinesia_risk: 'low' },
+            { date: '2025-07-22', tremor_score: 4.1, dyskinesia_risk: 'high' },
+            { date: '2025-07-23', tremor_score: 1.4, dyskinesia_risk: 'low' },
+            { date: '2025-07-24', tremor_score: 3.7, dyskinesia_risk: 'medium' },
+            { date: '2025-07-25', tremor_score: 2.2, dyskinesia_risk: 'low' },
+            { date: '2025-07-26', tremor_score: 4.6, dyskinesia_risk: 'high' },
+            { date: '2025-07-27', tremor_score: 2.8, dyskinesia_risk: 'low' },
+            { date: '2025-07-28', tremor_score: 3.3, dyskinesia_risk: 'medium' },
+            { date: '2025-07-29', tremor_score: 1.6, dyskinesia_risk: 'low' },
+            { date: '2025-07-30', tremor_score: 0.8, dyskinesia_risk: 'low' },
+            { date: '2025-07-31', tremor_score: 3.5, dyskinesia_risk: 'medium' }
         ];
 
         // Utility functions (carried over from v1.0)
@@ -496,7 +580,151 @@
 
             const [selectedFiles, setSelectedFiles] = useState({});
 
-            // Concept2 OAuth (from v1.0)
+            useEffect(() => {
+                // Check for Concept2 authorization code in URL
+                const checkForAuthCode = () => {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const code = urlParams.get('code');
+                    
+                    if (code && connections.concept2.status !== 'connected') {
+                        handleC2AuthCode(code);
+                    }
+                };
+                
+                checkForAuthCode();
+                const timer = setTimeout(checkForAuthCode, 100);
+                return () => clearTimeout(timer);
+            }, [connections.concept2.status]);
+
+            async function handleC2AuthCode(code) {
+                try {
+                    const token = await exchangeC2CodeForToken(code);
+                    const workoutData = await fetchC2Workouts(token);
+                    
+                    setConnections(prev => ({
+                        ...prev,
+                        concept2: { status: 'connected', data: workoutData, token: token }
+                    }));
+                    onDataUpdate('concept2', workoutData);
+                    
+                    // Clean up URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } catch (err) {
+                    console.error('C2 Auth error:', err);
+                    alert('Failed to authenticate with Concept2: ' + err.message);
+                }
+            }
+
+            async function exchangeC2CodeForToken(code) {
+                const response = await fetch(`${CONFIG.CONCEPT2.BASE_URL}/oauth/access_token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'authorization_code',
+                        client_id: CONFIG.CONCEPT2.CLIENT_ID,
+                        client_secret: CONFIG.CONCEPT2.CLIENT_SECRET,
+                        code: code,
+                        redirect_uri: CONFIG.CONCEPT2.REDIRECT_URI,
+                        scope: CONFIG.CONCEPT2.SCOPES
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Token exchange failed: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.access_token;
+            }
+
+            async function fetchC2Workouts(accessToken) {
+                const response = await fetch(`${CONFIG.CONCEPT2.BASE_URL}/api/users/me/results`, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch workouts: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.data || data.results || data || [];
+            }
+
+            // Concept2 CSV upload
+            async function handleC2CSVUpload() {
+                const file = selectedFiles.concept2;
+                if (!file) return;
+
+                try {
+                    const text = await file.text();
+                    const parsedData = await parseC2CSV(text);
+                    
+                    setConnections(prev => ({
+                        ...prev,
+                        concept2: { status: 'connected', data: parsedData, token: 'csv' }
+                    }));
+                    onDataUpdate('concept2', parsedData);
+                } catch (error) {
+                    alert('Error parsing Concept2 CSV: ' + error.message);
+                }
+            }
+
+            async function parseC2CSV(csvText) {
+                return new Promise((resolve, reject) => {
+                    Papa.parse(csvText, {
+                        header: true,
+                        dynamicTyping: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            if (results.errors.length > 0) {
+                                console.warn('CSV parsing warnings:', results.errors);
+                            }
+                            
+                            // Transform CSV data to our format - for C2 export format
+                            const workouts = results.data.map(row => {
+                                // Map C2 export fields to our format
+                                const date = row.Date;
+                                const time = row['Work Time (Seconds)'] || 0;
+                                const distance = row['Work Distance'] || 0;
+                                const pace = row.Pace;
+                                const watts = row['Avg Watts'] || 0;
+                                
+                                // Convert pace string to seconds if needed
+                                let paceSeconds = 0;
+                                if (pace && typeof pace === 'string') {
+                                    paceSeconds = parseTime(pace);
+                                }
+                                
+                                return {
+                                    date: date ? new Date(date).toISOString() : new Date().toISOString(),
+                                    time: time,
+                                    distance: distance,
+                                    pace: paceSeconds,
+                                    watts: watts,
+                                    type: row.Type || 'Unknown',
+                                    strokeRate: row['Stroke Rate/Cadence'] || 0,
+                                    heartRate: row['Avg Heart Rate'] || 0,
+                                    description: row.Description || '',
+                                    strokeCount: row['Stroke Count'] || 0
+                                };
+                            }).filter(w => {
+                                const hasValidData = (w.time > 0 || w.distance > 0) && w.date;
+                                return hasValidData;
+                            });
+                            
+                            resolve(workouts);
+                        },
+                        error: function(error) {
+                            reject(error);
+                        }
+                    });
+                });
+            }
             async function handleC2Auth() {
                 const params = new URLSearchParams({
                     client_id: CONFIG.CONCEPT2.CLIENT_ID,
@@ -573,7 +801,17 @@
                         </div>
                         <p>TSS & IF workout analysis</p>
                         <button onClick={handleC2Auth} className="auth-button">
-                            Connect Concept2
+                            Connect API
+                        </button>
+                        <div style={{margin: '10px 0', fontSize: '14px', color: '#666'}}>or</div>
+                        <input 
+                            type="file" 
+                            accept=".csv" 
+                            onChange={(e) => setSelectedFiles(prev => ({...prev, concept2: e.target.files[0]}))}
+                            className="file-input"
+                        />
+                        <button onClick={handleC2CSVUpload} className="upload-button">
+                            Upload CSV
                         </button>
                     </div>
 
@@ -991,7 +1229,7 @@
                     <div className="header">
                         <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                             <div>
-                                <h1>C2 Workout Tracker
+                                <h1>HHT
                                     <span className="version-badge">v2.0</span>
                                 </h1>
                                 <p>Multi-platform health and training analytics</p>
