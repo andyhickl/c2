@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C2 Workout Tracker v2.0</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            border-radius: 8px 8px 0 0;
+        }
+        .version-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .data-sources-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .data-source-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            transition: all 0.3s;
+        }
+        .data-source-card.connected {
+            border-color: #27ae60;
+            background: #f0fff4;
+        }
+        .data-source-card.error {
+            border-color: #e74c3c;
+            background: #fff5f5;
+        }
+        .source-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .source-title {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .source-status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-connected { background: #d4edda; color: #155724; }
+        .status-disconnected { background: #f8d7da; color: #721c24; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        
+        .auth-button, .upload-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px 5px 5px 0;
+        }
+        .auth-button:hover, .upload-button:hover {
+            background: #2980b9;
+        }
+        .auth-button.whoop { background: #ff6b6b; }
+        .auth-button.whoop:hover { background: #ff5252; }
+        
+        .file-input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            margin: 5px 0;
+            width: 100%;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #eee;
+            background: #f8f9fa;
+        }
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: #666;
+        }
+        .tab.active {
+            background: #3498db;
+            color: white;
+        }
+        .content {
+            padding: 20px;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #ddd;
+            border: 1px solid #ddd;
+        }
+        .calendar-day {
+            background: white;
+            min-height: 120px;
+            padding: 8px;
+            position: relative;
+        }
+        .calendar-day-number {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .workout-circle {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+            flexDirection: 'column';
+            textAlign: 'center';
+        }
+        
+        .health-indicators {
+            position: absolute;
+            top: 25px;
+            right: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .health-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
+        }
+        .whoop-recovery { background: #ff6b6b; }
+        .whoop-sleep { background: #4ecdc4; }
+        .whoop-strain { background: #ffe66d; color: #333; text-shadow: none; }
+        
+        .apple-health-summary {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            font-size: 8px;
+            color: #666;
+            line-height: 1.2;
+        }
+        
+        .tremor-indicator {
+            position: absolute;
+            top: 5px;
+            right: 25px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #9b59b6;
+        }
+        .tremor-low { background: #2ecc71; }
+        .tremor-medium { background: #f39c12; }
+        .tremor-high { background: #e74c3c; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .stats-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        .stats-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .stats-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 5px;
+        }
+        .stats-label {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .calendar-legend {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+        .legend-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .legend-section {
+            margin-right: 30px;
+            margin-bottom: 10px;
+        }
+        
+        .calendar-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .nav-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .nav-button:hover {
+            background: #2980b9;
+        }
+        .nav-button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .threshold-settings {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .threshold-input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100px;
+            margin: 0 10px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Configuration for all data sources
+        const CONFIG = {
+            CONCEPT2: {
+                CLIENT_ID: 'EourZV4an5ms0stQVwphmaZao96UV5jZMpAWH67K',
+                CLIENT_SECRET: 'Fh6Lr8R61UDAnrYoB90cf1fZkILgjnbfQjCd6Dfd',
+                REDIRECT_URI: 'https://andyhickl.github.io/c2/',
+                BASE_URL: 'https://log-dev.concept2.com',
+                SCOPES: 'user:read,results:read'
+            },
+            WHOOP: {
+                CLIENT_ID: 'YOUR_WHOOP_CLIENT_ID', // You'll need to register with Whoop
+                CLIENT_SECRET: 'YOUR_WHOOP_CLIENT_SECRET',
+                REDIRECT_URI: 'https://andyhickl.github.io/c2/',
+                BASE_URL: 'https://api.prod.whoop.com',
+                SCOPES: 'read:recovery read:sleep read:workout'
+            }
+        };
+
+        // Sample data for demonstration
+        const SAMPLE_WHOOP_DATA = [
+            { date: '2025-01-15', recovery: 85, sleep_score: 92, strain: 12.5 },
+            { date: '2025-01-16', recovery: 78, sleep_score: 88, strain: 15.2 },
+            { date: '2025-01-17', recovery: 92, sleep_score: 95, strain: 8.3 }
+        ];
+
+        const SAMPLE_APPLE_HEALTH_DATA = [
+            { date: '2025-01-15', steps: 8542, step_length: 0.78, double_support: 0.24, walking_speed: 1.32 },
+            { date: '2025-01-16', steps: 12890, step_length: 0.82, double_support: 0.22, walking_speed: 1.45 },
+            { date: '2025-01-17', steps: 6234, step_length: 0.75, double_support: 0.28, walking_speed: 1.18 }
+        ];
+
+        const SAMPLE_TREMOR_DATA = [
+            { date: '2025-01-15', tremor_score: 2.1, dyskinesia_risk: 'low' },
+            { date: '2025-01-16', tremor_score: 3.8, dyskinesia_risk: 'medium' },
+            { date: '2025-01-17', tremor_score: 1.2, dyskinesia_risk: 'low' }
+        ];
+
+        // Utility functions (carried over from v1.0)
+        function formatTime(seconds) {
+            if (!seconds || seconds === 0) return '0:00';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function parseTime(timeString) {
+            if (!timeString) return 0;
+            const parts = timeString.split(':').map(p => parseInt(p) || 0);
+            if (parts.length === 3) {
+                return parts[0] * 3600 + parts[1] * 60 + parts[2];
+            } else if (parts.length === 2) {
+                return parts[0] * 60 + parts[1];
+            }
+            return parseInt(timeString) || 0;
+        }
+
+        // TSS/IF calculations (from v1.0)
+        function calculateTSS(workout, userFTP = 166, thresholdMethod = 'pace', thresholdPace = '2:34') {
+            const duration = workout.time || 0;
+            const distance = workout.distance || 0;
+            
+            if (duration === 0) return 0;
+            
+            if (thresholdMethod === 'pace') {
+                const thresholdSeconds = parseTime(thresholdPace);
+                const workoutPaceSeconds = duration / (distance / 500);
+                
+                if (thresholdSeconds <= 0 || workoutPaceSeconds <= 0) return 0;
+                
+                const thresholdSpeed = 500 / thresholdSeconds;
+                const workoutSpeed = 500 / workoutPaceSeconds;
+                const intensityFactor = Math.min(workoutSpeed / thresholdSpeed, 2.0);
+                
+                const tss = (duration / 3600) * intensityFactor * intensityFactor * 100;
+                return Math.round(tss);
+            }
+            
+            // Power-based method fallback
+            let watts = workout.watts || 0;
+            if (watts === 0) {
+                const avgPaceSeconds = duration / (distance / 500);
+                if (avgPaceSeconds <= 0) return 0;
+                const avgPaceMinutes = avgPaceSeconds / 60;
+                watts = Math.max(50, 2800 / Math.pow(avgPaceMinutes, 3));
+            }
+            
+            const intensityFactor = watts / userFTP;
+            const tss = (duration / 3600) * intensityFactor * intensityFactor * 100;
+            return Math.round(tss);
+        }
+
+        function calculateIF(workout, userFTP = 166, thresholdMethod = 'pace', thresholdPace = '2:34') {
+            const duration = workout.time || 0;
+            const distance = workout.distance || 0;
+            
+            if (duration === 0) return 0;
+            
+            if (thresholdMethod === 'pace') {
+                const thresholdSeconds = parseTime(thresholdPace);
+                const workoutPaceSeconds = duration / (distance / 500);
+                
+                if (thresholdSeconds <= 0 || workoutPaceSeconds <= 0) return 0;
+                
+                const thresholdSpeed = 500 / thresholdSeconds;
+                const workoutSpeed = 500 / workoutPaceSeconds;
+                return Math.round((Math.min(workoutSpeed / thresholdSpeed, 2.0)) * 100) / 100;
+            }
+            
+            let watts = workout.watts || 0;
+            if (watts === 0) {
+                const avgPaceSeconds = duration / (distance / 500);
+                if (avgPaceSeconds <= 0) return 0;
+                const avgPaceMinutes = avgPaceSeconds / 60;
+                watts = Math.max(50, 2800 / Math.pow(avgPaceMinutes, 3));
+            }
+            
+            return Math.round((watts / userFTP) * 100) / 100;
+        }
+
+        function getIFColor(ifValue) {
+            if (ifValue < 0.5) return '#3498db';
+            if (ifValue < 0.7) return '#2ecc71';
+            if (ifValue < 0.85) return '#f39c12';
+            if (ifValue < 1.0) return '#e67e22';
+            return '#e74c3c';
+        }
+
+        function combineWorkoutsForDay(workouts) {
+            const totalDistance = workouts.reduce((sum, w) => sum + (w.distance || 0), 0);
+            const totalTime = workouts.reduce((sum, w) => sum + (w.time || 0), 0);
+            const totalWatts = workouts.reduce((sum, w) => sum + ((w.watts || 0) * (w.time || 0)), 0);
+            const avgWatts = totalTime > 0 ? totalWatts / totalTime : 0;
+            
+            return {
+                date: workouts[0].date,
+                time: totalTime,
+                distance: totalDistance,
+                watts: avgWatts,
+                workoutCount: workouts.length
+            };
+        }
+
+        // Health score color mapping
+        function getHealthScoreColor(score, type) {
+            if (type === 'recovery' || type === 'sleep') {
+                if (score >= 80) return '#2ecc71'; // Green
+                if (score >= 60) return '#f39c12'; // Yellow
+                return '#e74c3c'; // Red
+            }
+            if (type === 'strain') {
+                if (score <= 10) return '#2ecc71'; // Green
+                if (score <= 16) return '#f39c12'; // Yellow
+                return '#e74c3c'; // Red
+            }
+            return '#95a5a6'; // Gray default
+        }
+
+        function getTremorColor(score) {
+            if (score <= 2) return 'tremor-low';
+            if (score <= 4) return 'tremor-medium';
+            return 'tremor-high';
+        }
+
+        // Data Source Connection Component
+        function DataSourceConnections({ onDataUpdate }) {
+            const [connections, setConnections] = useState({
+                concept2: { status: 'disconnected', data: [], token: null },
+                whoop: { status: 'disconnected', data: [], token: null },
+                appleHealth: { status: 'disconnected', data: [] },
+                tremorData: { status: 'disconnected', data: [] }
+            });
+
+            const [selectedFiles, setSelectedFiles] = useState({});
+
+            // Concept2 OAuth (from v1.0)
+            async function handleC2Auth() {
+                const params = new URLSearchParams({
+                    client_id: CONFIG.CONCEPT2.CLIENT_ID,
+                    response_type: 'code',
+                    redirect_uri: CONFIG.CONCEPT2.REDIRECT_URI,
+                    scope: CONFIG.CONCEPT2.SCOPES
+                });
+                window.location.href = `${CONFIG.CONCEPT2.BASE_URL}/oauth/authorize?${params}`;
+            }
+
+            // Whoop OAuth (placeholder - you'll need to implement)
+            async function handleWhoopAuth() {
+                alert('Whoop OAuth - You\'ll need to register your app with Whoop first!\n\nFor now, using sample data.');
+                setConnections(prev => ({
+                    ...prev,
+                    whoop: { status: 'connected', data: SAMPLE_WHOOP_DATA, token: 'sample' }
+                }));
+                onDataUpdate('whoop', SAMPLE_WHOOP_DATA);
+            }
+
+            // File upload handlers
+            async function handleAppleHealthUpload() {
+                const file = selectedFiles.appleHealth;
+                if (!file) return;
+
+                try {
+                    const text = await file.text();
+                    const parsedData = await parseCSV(text);
+                    
+                    setConnections(prev => ({
+                        ...prev,
+                        appleHealth: { status: 'connected', data: parsedData }
+                    }));
+                    onDataUpdate('appleHealth', parsedData);
+                } catch (error) {
+                    alert('Error parsing Apple Health CSV: ' + error.message);
+                }
+            }
+
+            async function handleTremorDataUpload() {
+                // For demo, use sample data
+                setConnections(prev => ({
+                    ...prev,
+                    tremorData: { status: 'connected', data: SAMPLE_TREMOR_DATA }
+                }));
+                onDataUpdate('tremorData', SAMPLE_TREMOR_DATA);
+            }
+
+            async function parseCSV(csvText) {
+                return new Promise((resolve, reject) => {
+                    Papa.parse(csvText, {
+                        header: true,
+                        dynamicTyping: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            resolve(results.data);
+                        },
+                        error: function(error) {
+                            reject(error);
+                        }
+                    });
+                });
+            }
+
+            return (
+                <div className="data-sources-grid">
+                    {/* Concept2 */}
+                    <div className={`data-source-card ${connections.concept2.status === 'connected' ? 'connected' : ''}`}>
+                        <div className="source-header">
+                            <div className="source-title">Concept2 Workouts</div>
+                            <div className={`source-status status-${connections.concept2.status}`}>
+                                {connections.concept2.status}
+                            </div>
+                        </div>
+                        <p>TSS & IF workout analysis</p>
+                        <button onClick={handleC2Auth} className="auth-button">
+                            Connect Concept2
+                        </button>
+                    </div>
+
+                    {/* Whoop */}
+                    <div className={`data-source-card ${connections.whoop.status === 'connected' ? 'connected' : ''}`}>
+                        <div className="source-header">
+                            <div className="source-title">Whoop Recovery</div>
+                            <div className={`source-status status-${connections.whoop.status}`}>
+                                {connections.whoop.status}
+                            </div>
+                        </div>
+                        <p>Sleep, recovery, and strain scores</p>
+                        <button onClick={handleWhoopAuth} className="auth-button whoop">
+                            Connect Whoop (Demo)
+                        </button>
+                    </div>
+
+                    {/* Apple Health */}
+                    <div className={`data-source-card ${connections.appleHealth.status === 'connected' ? 'connected' : ''}`}>
+                        <div className="source-header">
+                            <div className="source-title">Apple Health</div>
+                            <div className={`source-status status-${connections.appleHealth.status}`}>
+                                {connections.appleHealth.status}
+                            </div>
+                        </div>
+                        <p>Steps, walking metrics, movement data</p>
+                        <input 
+                            type="file" 
+                            accept=".csv" 
+                            onChange={(e) => setSelectedFiles(prev => ({...prev, appleHealth: e.target.files[0]}))}
+                            className="file-input"
+                        />
+                        <button onClick={handleAppleHealthUpload} className="upload-button">
+                            Upload Apple Health CSV
+                        </button>
+                        <button 
+                            onClick={() => {
+                                setConnections(prev => ({...prev, appleHealth: { status: 'connected', data: SAMPLE_APPLE_HEALTH_DATA }}));
+                                onDataUpdate('appleHealth', SAMPLE_APPLE_HEALTH_DATA);
+                            }} 
+                            className="upload-button"
+                        >
+                            Use Sample Data
+                        </button>
+                    </div>
+
+                    {/* Tremor/Movement Data */}
+                    <div className={`data-source-card ${connections.tremorData.status === 'connected' ? 'connected' : ''}`}>
+                        <div className="source-header">
+                            <div className="source-title">Movement Disorders</div>
+                            <div className={`source-status status-${connections.tremorData.status}`}>
+                                {connections.tremorData.status}
+                            </div>
+                        </div>
+                        <p>Tremor analysis & dyskinesia prediction</p>
+                        <input 
+                            type="file" 
+                            accept=".csv" 
+                            onChange={(e) => setSelectedFiles(prev => ({...prev, tremorData: e.target.files[0]}))}
+                            className="file-input"
+                        />
+                        <button onClick={handleTremorDataUpload} className="upload-button">
+                            Use Sample Tremor Data
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Enhanced Calendar Component
+        function Calendar({ workouts, whoopData, appleHealthData, tremorData, userFTP, thresholdMethod, thresholdPace }) {
+            const [currentDate, setCurrentDate] = useState(new Date());
+            
+            const currentMonth = currentDate.getMonth();
+            const currentYear = currentDate.getFullYear();
+            
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+            
+            const days = [];
+            const current = new Date(startDate);
+            
+            for (let i = 0; i < 42; i++) {
+                days.push(new Date(current));
+                current.setDate(current.getDate() + 1);
+            }
+            
+            const monthNames = [
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+            ];
+
+            function goToPreviousMonth() {
+                setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
+            }
+
+            function goToNextMonth() {
+                setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
+            }
+
+            function goToToday() {
+                setCurrentDate(new Date());
+            }
+
+            function getDataForDate(data, date) {
+                const dateStr = date.toISOString().split('T')[0];
+                return data.find(item => item.date === dateStr);
+            }
+            
+            return (
+                <div>
+                    <div className="calendar-legend">
+                        <div className="legend-title">Health Dashboard Legend</div>
+                        <div className="legend-row">
+                            <div className="legend-section">
+                                <strong>Workout Circle:</strong> Size = TSS, Color = IF
+                            </div>
+                            <div className="legend-section">
+                                <strong>Whoop Indicators:</strong>
+                                <span style={{background: '#ff6b6b', color: 'white', padding: '2px 6px', borderRadius: '10px', margin: '0 5px', fontSize: '12px'}}>R</span>Recovery
+                                <span style={{background: '#4ecdc4', color: 'white', padding: '2px 6px', borderRadius: '10px', margin: '0 5px', fontSize: '12px'}}>S</span>Sleep
+                                <span style={{background: '#ffe66d', color: '#333', padding: '2px 6px', borderRadius: '10px', margin: '0 5px', fontSize: '12px'}}>T</span>Strain
+                            </div>
+                            <div className="legend-section">
+                                <strong>Tremor Risk:</strong>
+                                <span style={{background: '#2ecc71', width: '12px', height: '12px', borderRadius: '50%', display: 'inline-block', margin: '0 3px'}}></span>Low
+                                <span style={{background: '#f39c12', width: '12px', height: '12px', borderRadius: '50%', display: 'inline-block', margin: '0 3px'}}></span>Med
+                                <span style={{background: '#e74c3c', width: '12px', height: '12px', borderRadius: '50%', display: 'inline-block', margin: '0 3px'}}></span>High
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="calendar-nav">
+                        <button className="nav-button" onClick={goToPreviousMonth}>
+                            ← Previous
+                        </button>
+                        <h2>{monthNames[currentMonth]} {currentYear}</h2>
+                        <div>
+                            <button className="nav-button" onClick={goToToday} style={{marginRight: '10px'}}>
+                                Today
+                            </button>
+                            <button className="nav-button" onClick={goToNextMonth}>
+                                Next →
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="calendar-grid">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                            <div key={day} style={{background: '#f0f0f0', padding: '10px', fontWeight: 'bold', textAlign: 'center'}}>
+                                {day}
+                            </div>
+                        ))}
+                        {days.map((day, index) => {
+                            const dayWorkouts = workouts.filter(w => {
+                                const workoutDate = new Date(w.date);
+                                return workoutDate.toDateString() === day.toDateString();
+                            });
+                            
+                            const combinedWorkout = dayWorkouts.length > 0 ? combineWorkoutsForDay(dayWorkouts) : null;
+                            const whoopDay = getDataForDate(whoopData, day);
+                            const appleDay = getDataForDate(appleHealthData, day);
+                            const tremorDay = getDataForDate(tremorData, day);
+                            
+                            return (
+                                <div key={index} className="calendar-day">
+                                    <div className="calendar-day-number">
+                                        {day.getDate()}
+                                    </div>
+                                    
+                                    {/* Workout Circle */}
+                                    {combinedWorkout && (() => {
+                                        const tss = calculateTSS(combinedWorkout, userFTP, thresholdMethod, thresholdPace);
+                                        const ifValue = calculateIF(combinedWorkout, userFTP, thresholdMethod, thresholdPace);
+                                        const diameter = Math.max(40, Math.min(80, 40 + (tss * 0.8)));
+                                        const color = getIFColor(ifValue);
+                                        
+                                        return (
+                                            <div
+                                                className="workout-circle"
+                                                style={{
+                                                    width: diameter,
+                                                    height: diameter,
+                                                    backgroundColor: color,
+                                                    top: '40%',
+                                                    left: '50%',
+                                                    transform: 'translate(-50%, -50%)',
+                                                    fontSize: diameter < 50 ? '8px' : '10px'
+                                                }}
+                                                title={`${combinedWorkout.workoutCount} workout(s) - TSS: ${tss}, IF: ${ifValue}`}
+                                            >
+                                                <div>{Math.round(combinedWorkout.distance)}m</div>
+                                                <div style={{fontSize: '7px'}}>{formatTime(combinedWorkout.time)}</div>
+                                            </div>
+                                        );
+                                    })()}
+                                    
+                                    {/* Whoop Health Indicators */}
+                                    {whoopDay && (
+                                        <div className="health-indicators">
+                                            <div 
+                                                className="health-circle"
+                                                style={{backgroundColor: getHealthScoreColor(whoopDay.recovery, 'recovery')}}
+                                                title={`Recovery: ${whoopDay.recovery}%`}
+                                            >
+                                                {whoopDay.recovery}
+                                            </div>
+                                            <div 
+                                                className="health-circle"
+                                                style={{backgroundColor: getHealthScoreColor(whoopDay.sleep_score, 'sleep')}}
+                                                title={`Sleep: ${whoopDay.sleep_score}%`}
+                                            >
+                                                {whoopDay.sleep_score}
+                                            </div>
+                                            <div 
+                                                className="health-circle"
+                                                style={{backgroundColor: getHealthScoreColor(whoopDay.strain, 'strain')}}
+                                                title={`Strain: ${whoopDay.strain}`}
+                                            >
+                                                {whoopDay.strain}
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Tremor Indicator */}
+                                    {tremorDay && (
+                                        <div 
+                                            className={`tremor-indicator ${getTremorColor(tremorDay.tremor_score)}`}
+                                            title={`Tremor: ${tremorDay.tremor_score}/10, Risk: ${tremorDay.dyskinesia_risk}`}
+                                        ></div>
+                                    )}
+                                    
+                                    {/* Apple Health Summary */}
+                                    {appleDay && (
+                                        <div className="apple-health-summary">
+                                            {appleDay.steps?.toLocaleString()} steps<br/>
+                                            {appleDay.walking_speed?.toFixed(1)}m/s speed
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        // Enhanced Statistics Component
+        function Statistics({ workouts, whoopData, appleHealthData, tremorData, userFTP, thresholdMethod, thresholdPace }) {
+            const [currentDate, setCurrentDate] = useState(new Date());
+            const [viewType, setViewType] = useState('month');
+            
+            function getDateRange() {
+                const now = currentDate;
+                switch(viewType) {
+                    case 'week':
+                        const weekStart = new Date(now);
+                        weekStart.setDate(now.getDate() - now.getDay());
+                        const weekEnd = new Date(weekStart);
+                        weekEnd.setDate(weekStart.getDate() + 6);
+                        return { start: weekStart, end: weekEnd, label: `Week of ${weekStart.toLocaleDateString()}` };
+                    case 'year':
+                        const yearStart = new Date(now.getFullYear(), 0, 1);
+                        const yearEnd = new Date(now.getFullYear(), 11, 31);
+                        return { start: yearStart, end: yearEnd, label: `${now.getFullYear()}` };
+                    default:
+                        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                        const monthNames = ["January", "February", "March", "April", "May", "June",
+                            "July", "August", "September", "October", "November", "December"];
+                        return { start: monthStart, end: monthEnd, label: `${monthNames[now.getMonth()]} ${now.getFullYear()}` };
+                }
+            }
+
+            const { start: filterDate, end: endDate, label } = getDateRange();
+            
+            function getStatsForPeriod(data, startDate, endDate, dataType) {
+                const filtered = data.filter(item => {
+                    const itemDate = new Date(item.date);
+                    return itemDate >= startDate && itemDate <= endDate;
+                });
+
+                if (dataType === 'workouts') {
+                    const totalDistance = filtered.reduce((sum, w) => sum + (w.distance || 0), 0);
+                    const totalTime = filtered.reduce((sum, w) => sum + (w.time || 0), 0);
+                    const totalTSS = filtered.reduce((sum, w) => sum + calculateTSS(w, userFTP, thresholdMethod, thresholdPace), 0);
+                    
+                    return {
+                        count: filtered.length,
+                        distance: Math.round(totalDistance),
+                        time: totalTime,
+                        tss: totalTSS
+                    };
+                }
+
+                if (dataType === 'whoop') {
+                    const avgRecovery = filtered.length > 0 ? 
+                        Math.round(filtered.reduce((sum, w) => sum + (w.recovery || 0), 0) / filtered.length) : 0;
+                    const avgSleep = filtered.length > 0 ? 
+                        Math.round(filtered.reduce((sum, w) => sum + (w.sleep_score || 0), 0) / filtered.length) : 0;
+                    const avgStrain = filtered.length > 0 ? 
+                        Math.round(filtered.reduce((sum, w) => sum + (w.strain || 0), 0) / filtered.length * 10) / 10 : 0;
+                    
+                    return { avgRecovery, avgSleep, avgStrain };
+                }
+
+                if (dataType === 'appleHealth') {
+                    const totalSteps = filtered.reduce((sum, d) => sum + (d.steps || 0), 0);
+                    const avgWalkingSpeed = filtered.length > 0 ? 
+                        filtered.reduce((sum, d) => sum + (d.walking_speed || 0), 0) / filtered.length : 0;
+                    
+                    return {
+                        totalSteps: Math.round(totalSteps),
+                        avgWalkingSpeed: Math.round(avgWalkingSpeed * 100) / 100,
+                        daysTracked: filtered.length
+                    };
+                }
+
+                return {};
+            }
+            
+            const workoutStats = getStatsForPeriod(workouts, filterDate, endDate, 'workouts');
+            const whoopStats = getStatsForPeriod(whoopData, filterDate, endDate, 'whoop');
+            const appleStats = getStatsForPeriod(appleHealthData, filterDate, endDate, 'appleHealth');
+            
+            return (
+                <div>
+                    <div className="calendar-nav">
+                        <button className="nav-button" onClick={() => setCurrentDate(new Date(currentDate.getTime() - (viewType === 'week' ? 7 : viewType === 'month' ? 30 : 365) * 24 * 60 * 60 * 1000))}>
+                            ← Previous
+                        </button>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '20px'}}>
+                            <h2>{label}</h2>
+                            <select 
+                                value={viewType} 
+                                onChange={(e) => {setViewType(e.target.value); setCurrentDate(new Date());}}
+                                style={{padding: '5px 10px', borderRadius: '4px', border: '1px solid #ccc'}}
+                            >
+                                <option value="week">Week</option>
+                                <option value="month">Month</option>
+                                <option value="year">Year</option>
+                            </select>
+                        </div>
+                        <button className="nav-button" onClick={() => setCurrentDate(new Date(currentDate.getTime() + (viewType === 'week' ? 7 : viewType === 'month' ? 30 : 365) * 24 * 60 * 60 * 1000))}>
+                            Next →
+                        </button>
+                    </div>
+
+                    <div className="stats-grid">
+                        <div className="stats-card">
+                            <div className="stats-title">Training Load</div>
+                            <div className="stats-value">{workoutStats.distance?.toLocaleString()}m</div>
+                            <div className="stats-label">Distance</div>
+                            <div className="stats-value">{formatTime(workoutStats.time)}</div>
+                            <div className="stats-label">Time</div>
+                            <div className="stats-value">{workoutStats.tss}</div>
+                            <div className="stats-label">Total TSS</div>
+                            <div className="stats-value">{workoutStats.count}</div>
+                            <div className="stats-label">Workouts</div>
+                        </div>
+
+                        <div className="stats-card">
+                            <div className="stats-title">Recovery Metrics</div>
+                            <div className="stats-value" style={{color: getHealthScoreColor(whoopStats.avgRecovery, 'recovery')}}>{whoopStats.avgRecovery}%</div>
+                            <div className="stats-label">Avg Recovery</div>
+                            <div className="stats-value" style={{color: getHealthScoreColor(whoopStats.avgSleep, 'sleep')}}>{whoopStats.avgSleep}%</div>
+                            <div className="stats-label">Avg Sleep Score</div>
+                            <div className="stats-value" style={{color: getHealthScoreColor(whoopStats.avgStrain, 'strain')}}>{whoopStats.avgStrain}</div>
+                            <div className="stats-label">Avg Strain</div>
+                        </div>
+
+                        <div className="stats-card">
+                            <div className="stats-title">Movement & Health</div>
+                            <div className="stats-value">{appleStats.totalSteps?.toLocaleString()}</div>
+                            <div className="stats-label">Total Steps</div>
+                            <div className="stats-value">{appleStats.avgWalkingSpeed} m/s</div>
+                            <div className="stats-label">Avg Walking Speed</div>
+                            <div className="stats-value">{appleStats.daysTracked}</div>
+                            <div className="stats-label">Days Tracked</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Main App Component
+        function App() {
+            const [activeTab, setActiveTab] = useState('connections');
+            const [userFTP, setUserFTP] = useState(166);
+            const [thresholdMethod, setThresholdMethod] = useState('pace');
+            const [thresholdPace, setThresholdPace] = useState('2:34');
+            
+            const [allData, setAllData] = useState({
+                workouts: [],
+                whoopData: [],
+                appleHealthData: [],
+                tremorData: []
+            });
+
+            function handleDataUpdate(source, data) {
+                setAllData(prev => ({
+                    ...prev,
+                    [source === 'concept2' ? 'workouts' : source === 'whoop' ? 'whoopData' : source === 'appleHealth' ? 'appleHealthData' : 'tremorData']: data
+                }));
+            }
+
+            function hasAnyData() {
+                return allData.workouts.length > 0 || allData.whoopData.length > 0 || 
+                       allData.appleHealthData.length > 0 || allData.tremorData.length > 0;
+            }
+            
+            return (
+                <div className="container">
+                    <div className="header">
+                        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                            <div>
+                                <h1>C2 Workout Tracker
+                                    <span className="version-badge">v2.0</span>
+                                </h1>
+                                <p>Multi-platform health and training analytics</p>
+                            </div>
+                            <div style={{textAlign: 'right', fontSize: '14px'}}>
+                                <div>Connected: {Object.values(allData).filter(d => d.length > 0).length}/4 sources</div>
+                                <div>Total data points: {Object.values(allData).reduce((sum, d) => sum + d.length, 0)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {!hasAnyData() && (
+                        <DataSourceConnections onDataUpdate={handleDataUpdate} />
+                    )}
+
+                    {hasAnyData() && (
+                        <>
+                            <div className="threshold-settings">
+                                <label>
+                                    <input 
+                                        type="radio" 
+                                        name="threshold-method"
+                                        checked={thresholdMethod === 'watts'}
+                                        onChange={() => setThresholdMethod('watts')}
+                                    />
+                                    FTP: <input 
+                                        type="number" 
+                                        value={userFTP} 
+                                        onChange={(e) => setUserFTP(parseInt(e.target.value) || 166)}
+                                        className="threshold-input"
+                                        disabled={thresholdMethod !== 'watts'}
+                                    /> watts
+                                </label>
+                                <label style={{marginLeft: '20px'}}>
+                                    <input 
+                                        type="radio" 
+                                        name="threshold-method"
+                                        checked={thresholdMethod === 'pace'}
+                                        onChange={() => setThresholdMethod('pace')}
+                                    />
+                                    Threshold Pace: <input 
+                                        type="text" 
+                                        value={thresholdPace} 
+                                        onChange={(e) => setThresholdPace(e.target.value)}
+                                        className="threshold-input"
+                                        disabled={thresholdMethod !== 'pace'}
+                                    />
+                                </label>
+                                <button 
+                                    onClick={() => setAllData({ workouts: [], whoopData: [], appleHealthData: [], tremorData: [] })}
+                                    style={{marginLeft: '20px', padding: '5px 10px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer'}}
+                                >
+                                    Reset All Data
+                                </button>
+                            </div>
+
+                            <div className="tabs">
+                                <button 
+                                    className={`tab ${activeTab === 'calendar' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('calendar')}
+                                >
+                                    Health Calendar
+                                </button>
+                                <button 
+                                    className={`tab ${activeTab === 'statistics' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('statistics')}
+                                >
+                                    Analytics Dashboard
+                                </button>
+                                <button 
+                                    className={`tab ${activeTab === 'connections' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('connections')}
+                                >
+                                    Data Sources
+                                </button>
+                            </div>
+                            
+                            <div className="content">
+                                {activeTab === 'calendar' && (
+                                    <Calendar 
+                                        workouts={allData.workouts}
+                                        whoopData={allData.whoopData}
+                                        appleHealthData={allData.appleHealthData}
+                                        tremorData={allData.tremorData}
+                                        userFTP={userFTP}
+                                        thresholdMethod={thresholdMethod}
+                                        thresholdPace={thresholdPace}
+                                    />
+                                )}
+                                {activeTab === 'statistics' && (
+                                    <Statistics 
+                                        workouts={allData.workouts}
+                                        whoopData={allData.whoopData}
+                                        appleHealthData={allData.appleHealthData}
+                                        tremorData={allData.tremorData}
+                                        userFTP={userFTP}
+                                        thresholdMethod={thresholdMethod}
+                                        thresholdPace={thresholdPace}
+                                    />
+                                )}
+                                {activeTab === 'connections' && (
+                                    <DataSourceConnections onDataUpdate={handleDataUpdate} />
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
