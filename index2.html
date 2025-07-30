@@ -732,14 +732,37 @@
                 window.location.href = `${CONFIG.CONCEPT2.BASE_URL}/oauth/authorize?${params}`;
             }
 
-            // Whoop OAuth (placeholder - you'll need to implement)
+            // Whoop OAuth - real implementation steps
             async function handleWhoopAuth() {
-                alert('Whoop OAuth - You\'ll need to register your app with Whoop first!\n\nFor now, using sample data.');
-                setConnections(prev => ({
-                    ...prev,
-                    whoop: { status: 'connected', data: SAMPLE_WHOOP_DATA, token: 'sample' }
-                }));
-                onDataUpdate('whoop', SAMPLE_WHOOP_DATA);
+                if (CONFIG.WHOOP.CLIENT_ID === 'YOUR_WHOOP_CLIENT_ID') {
+                    alert(`To connect real Whoop data:
+
+1. Go to: https://developer.whoop.com
+2. Create a developer account
+3. Register your app with these details:
+   - App Name: HHT Health Tracker
+   - Callback URL: https://andyhickl.github.io/c2/index2.html
+   - Scopes: read:recovery read:sleep read:workout
+4. Get your Client ID and Secret
+5. Update the CONFIG.WHOOP section in the code
+
+For now, using sample data...`);
+                    
+                    setConnections(prev => ({
+                        ...prev,
+                        whoop: { status: 'connected', data: SAMPLE_WHOOP_DATA, token: 'sample' }
+                    }));
+                    onDataUpdate('whoop', SAMPLE_WHOOP_DATA);
+                } else {
+                    // Real OAuth flow
+                    const params = new URLSearchParams({
+                        client_id: CONFIG.WHOOP.CLIENT_ID,
+                        response_type: 'code',
+                        redirect_uri: CONFIG.WHOOP.REDIRECT_URI,
+                        scope: CONFIG.WHOOP.SCOPES
+                    });
+                    window.location.href = `${CONFIG.WHOOP.BASE_URL}/oauth/authorize?${params}`;
+                }
             }
 
             // File upload handlers
@@ -820,9 +843,9 @@
                                 {connections.whoop.status}
                             </div>
                         </div>
-                        <p>Sleep, recovery, and strain scores</p>
+                        <p>Sleep, recovery, and strain scores (requires developer.whoop.com registration)</p>
                         <button onClick={handleWhoopAuth} className="auth-button whoop">
-                            Connect Whoop (Demo)
+                            Connect Whoop
                         </button>
                     </div>
 
@@ -928,17 +951,11 @@
                                 <strong>Workout Circle:</strong> Size = TSS, Color = IF
                             </div>
                             <div className="legend-section">
-                                <strong>Whoop Indicators:</strong>
+                                <strong>Health Indicators:</strong>
                                 <span style={{background: '#ff6b6b', color: 'white', padding: '2px 6px', borderRadius: '10px', margin: '0 5px', fontSize: '12px'}}>R</span>Recovery
                                 <span style={{background: '#4ecdc4', color: 'white', padding: '2px 6px', borderRadius: '10px', margin: '0 5px', fontSize: '12px'}}>S</span>Sleep
                                 <span style={{background: '#ffe66d', color: '#333', padding: '2px 6px', borderRadius: '10px', margin: '0 5px', fontSize: '12px'}}>T</span>Strain
-                            </div>
-                            <div className="legend-section">
-                                <strong>PD Impact:</strong>
-                                <span style={{background: '#2ecc71', width: '12px', height: '12px', borderRadius: '50%', display: 'inline-block', margin: '0 3px'}}></span>Low
-                                <span style={{background: '#f39c12', width: '12px', height: '12px', borderRadius: '50%', display: 'inline-block', margin: '0 3px'}}></span>Med
-                                <span style={{background: '#e74c3c', width: '12px', height: '12px', borderRadius: '50%', display: 'inline-block', margin: '0 3px'}}></span>High
-                                (positioned below Whoop indicators)
+                                <span style={{background: '#2ecc71', color: 'white', padding: '2px 6px', borderRadius: '10px', margin: '0 5px', fontSize: '12px'}}>PD</span>Impact
                             </div>
                         </div>
                     </div>
@@ -1008,32 +1025,50 @@
                                         );
                                     })()}
                                     
-                                    {/* Whoop Health Indicators */}
-                                    {whoopDay && (
-                                        <div className="health-indicators">
+                                    {/* Health Indicators - Whoop + PD Impact */}
+                                    <div className="health-indicators">
+                                        {whoopDay && (
+                                            <>
+                                                <div 
+                                                    className="health-circle"
+                                                    style={{backgroundColor: getHealthScoreColor(whoopDay.recovery, 'recovery')}}
+                                                    title={`Recovery: ${whoopDay.recovery}%`}
+                                                >
+                                                    {whoopDay.recovery}
+                                                </div>
+                                                <div 
+                                                    className="health-circle"
+                                                    style={{backgroundColor: getHealthScoreColor(whoopDay.sleep_score, 'sleep')}}
+                                                    title={`Sleep: ${whoopDay.sleep_score}%`}
+                                                >
+                                                    {whoopDay.sleep_score}
+                                                </div>
+                                                <div 
+                                                    className="health-circle"
+                                                    style={{backgroundColor: getHealthScoreColor(whoopDay.strain, 'strain')}}
+                                                    title={`Strain: ${whoopDay.strain}`}
+                                                >
+                                                    {whoopDay.strain}
+                                                </div>
+                                            </>
+                                        )}
+                                        
+                                        {/* PD Impact Indicator - same size as Whoop circles */}
+                                        {tremorDay && (
                                             <div 
                                                 className="health-circle"
-                                                style={{backgroundColor: getHealthScoreColor(whoopDay.recovery, 'recovery')}}
-                                                title={`Recovery: ${whoopDay.recovery}%`}
+                                                style={{
+                                                    backgroundColor: getTremorColor(tremorDay.tremor_score) === 'tremor-low' ? '#2ecc71' :
+                                                                   getTremorColor(tremorDay.tremor_score) === 'tremor-medium' ? '#f39c12' : '#e74c3c',
+                                                    color: 'white',
+                                                    fontSize: '8px'
+                                                }}
+                                                title={`PD Impact: ${tremorDay.tremor_score}/10, Risk: ${tremorDay.dyskinesia_risk}`}
                                             >
-                                                {whoopDay.recovery}
+                                                {tremorDay.tremor_score.toFixed(1)}
                                             </div>
-                                            <div 
-                                                className="health-circle"
-                                                style={{backgroundColor: getHealthScoreColor(whoopDay.sleep_score, 'sleep')}}
-                                                title={`Sleep: ${whoopDay.sleep_score}%`}
-                                            >
-                                                {whoopDay.sleep_score}
-                                            </div>
-                                            <div 
-                                                className="health-circle"
-                                                style={{backgroundColor: getHealthScoreColor(whoopDay.strain, 'strain')}}
-                                                title={`Strain: ${whoopDay.strain}`}
-                                            >
-                                                {whoopDay.strain}
-                                            </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                     
                                     {/* Apple Health Summary */}
                                     {appleDay && (
@@ -1041,31 +1076,6 @@
                                             {appleDay.steps?.toLocaleString()} steps<br/>
                                             {appleDay.walking_speed?.toFixed(1)}m/s speed<br/>
                                             {appleDay.double_support?.toFixed(2)}s dbl supp
-                                        </div>
-                                    )}
-                                    
-                                    {/* Tremor Indicator - aligned with Whoop circles */}
-                                    {tremorDay && (
-                                        <div style={{
-                                            position: 'absolute',
-                                            top: whoopDay ? '85px' : '25px', // Position below Whoop indicators if present
-                                            right: '5px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            fontSize: '8px',
-                                            color: '#666'
-                                        }}>
-                                            <span style={{marginRight: '3px', fontWeight: 'bold'}}>PD:</span>
-                                            <div 
-                                                className={`tremor-indicator ${getTremorColor(tremorDay.tremor_score)}`}
-                                                style={{
-                                                    position: 'relative',
-                                                    top: 'auto',
-                                                    right: 'auto',
-                                                    marginLeft: '2px'
-                                                }}
-                                                title={`Tremor: ${tremorDay.tremor_score}/10, Risk: ${tremorDay.dyskinesia_risk}`}
-                                            ></div>
                                         </div>
                                     )}
                                 </div>
