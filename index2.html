@@ -583,9 +583,19 @@
                     const urlParams = new URLSearchParams(window.location.search);
                     const code = urlParams.get('code');
                     const state = urlParams.get('state');
+                    const error = urlParams.get('error');
+                    const errorDescription = urlParams.get('error_description');
                     
-                    console.log('Checking for auth code. Code:', code, 'State:', state);
+                    console.log('Full URL:', window.location.href);
+                    console.log('URL search params:', window.location.search);
+                    console.log('Checking for auth code. Code:', code, 'State:', state, 'Error:', error);
+                    if (errorDescription) console.log('Error description:', errorDescription);
                     console.log('Current connection status - C2:', connections.concept2.status, 'Whoop:', connections.whoop.status);
+                    
+                    if (error) {
+                        alert(`OAuth error: ${error} - ${errorDescription || 'Unknown error'}`);
+                        return;
+                    }
                     
                     if (code) {
                         // Determine which service based on existing connections or URL patterns
@@ -1020,6 +1030,16 @@
                             className="upload-button"
                         >
                             Use Sample Data
+                        </button>
+                        <button 
+                            onClick={() => {
+                                console.log('Testing Whoop auth redirect...');
+                                console.log('Redirect URL will be:', `${CONFIG.WHOOP.BASE_URL}/oauth/oauth2/auth?client_id=${CONFIG.WHOOP.CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(CONFIG.WHOOP.REDIRECT_URI)}&scope=${encodeURIComponent(CONFIG.WHOOP.SCOPES)}`);
+                            }}
+                            className="upload-button"
+                            style={{fontSize: '12px', padding: '4px 8px'}}
+                        >
+                            Debug Auth URL
                         </button>
                     </div>
 
