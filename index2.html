@@ -191,9 +191,6 @@
         }
         
         .tremor-indicator {
-            position: absolute;
-            top: 5px;
-            right: 25px;
             width: 12px;
             height: 12px;
             border-radius: 50%;
@@ -837,7 +834,7 @@
                                 {connections.appleHealth.status}
                             </div>
                         </div>
-                        <p>Steps, walking metrics, movement data</p>
+                        <p>Steps, walking speed, step length, double support time</p>
                         <input 
                             type="file" 
                             accept=".csv" 
@@ -866,7 +863,7 @@
                                 {connections.tremorData.status}
                             </div>
                         </div>
-                        <p>Tremor analysis & dyskinesia prediction</p>
+                        <p>Tremor analysis & PD impact prediction</p>
                         <input 
                             type="file" 
                             accept=".csv" 
@@ -937,10 +934,11 @@
                                 <span style={{background: '#ffe66d', color: '#333', padding: '2px 6px', borderRadius: '10px', margin: '0 5px', fontSize: '12px'}}>T</span>Strain
                             </div>
                             <div className="legend-section">
-                                <strong>Tremor Risk:</strong>
+                                <strong>PD Impact:</strong>
                                 <span style={{background: '#2ecc71', width: '12px', height: '12px', borderRadius: '50%', display: 'inline-block', margin: '0 3px'}}></span>Low
                                 <span style={{background: '#f39c12', width: '12px', height: '12px', borderRadius: '50%', display: 'inline-block', margin: '0 3px'}}></span>Med
                                 <span style={{background: '#e74c3c', width: '12px', height: '12px', borderRadius: '50%', display: 'inline-block', margin: '0 3px'}}></span>High
+                                (positioned below Whoop indicators)
                             </div>
                         </div>
                     </div>
@@ -1037,19 +1035,37 @@
                                         </div>
                                     )}
                                     
-                                    {/* Tremor Indicator */}
-                                    {tremorDay && (
-                                        <div 
-                                            className={`tremor-indicator ${getTremorColor(tremorDay.tremor_score)}`}
-                                            title={`Tremor: ${tremorDay.tremor_score}/10, Risk: ${tremorDay.dyskinesia_risk}`}
-                                        ></div>
-                                    )}
-                                    
                                     {/* Apple Health Summary */}
                                     {appleDay && (
                                         <div className="apple-health-summary">
                                             {appleDay.steps?.toLocaleString()} steps<br/>
-                                            {appleDay.walking_speed?.toFixed(1)}m/s speed
+                                            {appleDay.walking_speed?.toFixed(1)}m/s speed<br/>
+                                            {appleDay.double_support?.toFixed(2)}s dbl supp
+                                        </div>
+                                    )}
+                                    
+                                    {/* Tremor Indicator - aligned with Whoop circles */}
+                                    {tremorDay && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: whoopDay ? '85px' : '25px', // Position below Whoop indicators if present
+                                            right: '5px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            fontSize: '8px',
+                                            color: '#666'
+                                        }}>
+                                            <span style={{marginRight: '3px', fontWeight: 'bold'}}>PD:</span>
+                                            <div 
+                                                className={`tremor-indicator ${getTremorColor(tremorDay.tremor_score)}`}
+                                                style={{
+                                                    position: 'relative',
+                                                    top: 'auto',
+                                                    right: 'auto',
+                                                    marginLeft: '2px'
+                                                }}
+                                                title={`Tremor: ${tremorDay.tremor_score}/10, Risk: ${tremorDay.dyskinesia_risk}`}
+                                            ></div>
                                         </div>
                                     )}
                                 </div>
@@ -1123,10 +1139,16 @@
                     const totalSteps = filtered.reduce((sum, d) => sum + (d.steps || 0), 0);
                     const avgWalkingSpeed = filtered.length > 0 ? 
                         filtered.reduce((sum, d) => sum + (d.walking_speed || 0), 0) / filtered.length : 0;
+                    const avgDoubleSupport = filtered.length > 0 ? 
+                        filtered.reduce((sum, d) => sum + (d.double_support || 0), 0) / filtered.length : 0;
+                    const avgStepLength = filtered.length > 0 ? 
+                        filtered.reduce((sum, d) => sum + (d.step_length || 0), 0) / filtered.length : 0;
                     
                     return {
                         totalSteps: Math.round(totalSteps),
                         avgWalkingSpeed: Math.round(avgWalkingSpeed * 100) / 100,
+                        avgDoubleSupport: Math.round(avgDoubleSupport * 100) / 100,
+                        avgStepLength: Math.round(avgStepLength * 100) / 100,
                         daysTracked: filtered.length
                     };
                 }
@@ -1190,6 +1212,10 @@
                             <div className="stats-label">Total Steps</div>
                             <div className="stats-value">{appleStats.avgWalkingSpeed} m/s</div>
                             <div className="stats-label">Avg Walking Speed</div>
+                            <div className="stats-value">{appleStats.avgStepLength} m</div>
+                            <div className="stats-label">Avg Step Length</div>
+                            <div className="stats-value">{appleStats.avgDoubleSupport} s</div>
+                            <div className="stats-label">Avg Double Support</div>
                             <div className="stats-value">{appleStats.daysTracked}</div>
                             <div className="stats-label">Days Tracked</div>
                         </div>
