@@ -576,6 +576,7 @@
             });
 
             const [selectedFiles, setSelectedFiles] = useState({});
+            const [whoopToken, setWhoopToken] = useState(null); // Store token for display
 
             useEffect(() => {
                 // Check for authorization codes in URL from both Concept2 and Whoop
@@ -637,43 +638,36 @@
             async function handleWhoopAuthCode(code) {
                 try {
                     console.log('Handling Whoop auth code:', code);
-                    const token = await exchangeWhoopCodeForToken(code);
-                    console.log('Got Whoop token:', token ? 'Token received' : 'No token');
                     
-                    const whoopData = await fetchWhoopData(token);
-                    console.log('Final Whoop data for app:', whoopData);
+                    // Since we can't do token exchange in browser due to CORS,
+                    // let's provide the user with the curl command they can run
+                    const curlCommand = `curl -X POST "https://api.prod.whoop.com/oauth/oauth2/token" \\
+  -H "Content-Type: application/x-www-form-urlencoded" \\
+  -d "grant_type=authorization_code&client_id=${CONFIG.WHOOP.CLIENT_ID}&client_secret=${CONFIG.WHOOP.CLIENT_SECRET}&code=${code}&redirect_uri=${encodeURIComponent(CONFIG.WHOOP.REDIRECT_URI)}"`;
+                    
+                    console.log('Curl command to get token:', curlCommand);
+                    
+                    // For now, use sample data and show the user how to get real data
+                    const whoopData = SAMPLE_WHOOP_DATA;
                     
                     setConnections(prev => ({
                         ...prev,
-                        whoop: { status: 'connected', data: whoopData, token: token }
+                        whoop: { status: 'connected', data: whoopData, token: 'demo_token' }
                     }));
                     onDataUpdate('whoop', whoopData);
+                    setWhoopToken({
+                        authCode: code,
+                        curlCommand: curlCommand
+                    });
                     
                     // Clean up URL
                     window.history.replaceState({}, document.title, window.location.pathname);
                     
-                    alert(`Successfully connected to Whoop! Imported ${whoopData.length} data points.`);
+                    alert(`Whoop OAuth completed! Your authorization code: ${code.substring(0, 20)}...\n\nCheck the console or the Data Sources tab for the curl command to get your access token.`);
+                    
                 } catch (err) {
                     console.error('Whoop Auth error:', err);
-                    
-                    if (err.message.includes('CORS_ERROR')) {
-                        // Handle CORS error by using sample data
-                        console.log('Using sample data due to CORS restrictions');
-                        const whoopData = SAMPLE_WHOOP_DATA;
-                        
-                        setConnections(prev => ({
-                            ...prev,
-                            whoop: { status: 'connected', data: whoopData, token: 'demo_token' }
-                        }));
-                        onDataUpdate('whoop', whoopData);
-                        
-                        // Clean up URL
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                        
-                        alert(`Whoop OAuth completed successfully! However, due to CORS restrictions in the browser, we're using sample data (${whoopData.length} data points). In a production app, the token exchange would happen on a backend server.`);
-                    } else {
-                        alert('Failed to authenticate with Whoop: ' + err.message);
-                    }
+                    alert('Failed to authenticate with Whoop: ' + err.message);
                 }
             }
 
@@ -1124,6 +1118,37 @@
                             </div>
                         </div>
                         <p>Sleep, recovery, and strain scores from your Whoop device</p>
+                        
+                        {whoopToken && (
+                            <div style={{background: '#f0f8ff', padding: '15px', borderRadius: '6px', margin: '10px 0', border: '1px solid #d1ecf1'}}>
+                                <h4 style={{margin: '0 0 10px 0', color: '#0c5460'}}>Get Your Whoop Data</h4>
+                                <p style={{margin: '5px 0', fontSize: '14px'}}>
+                                    <strong>Auth Code:</strong> <code style={{background: '#e9ecef', padding: '2px 4px', borderRadius: '3px'}}>{whoopToken.authCode}</code>
+                                </p>
+                                <p style={{margin: '10px 0 5px 0', fontSize: '12px', color: '#666'}}>
+                                    Run this curl command to get your access token:
+                                </p>
+                                <textarea 
+                                    value={whoopToken.curlCommand}
+                                    readOnly
+                                    style={{
+                                        width: '100%', 
+                                        height: '80px', 
+                                        fontSize: '11px', 
+                                        fontFamily: 'monospace',
+                                        background: '#f8f9fa',
+                                        border: '1px solid #dee2e6',
+                                        borderRadius: '4px',
+                                        padding: '8px'
+                                    }}
+                                    onClick={(e) => e.target.select()}
+                                />
+                                <p style={{margin: '5px 0', fontSize: '12px', color: '#666'}}>
+                                    Copy the access_token from the response and use it with the export script.
+                                </p>
+                            </div>
+                        )}
+                        
                         <button onClick={handleWhoopAuth} className="auth-button whoop">
                             Connect Whoop API
                         </button>
@@ -1145,18 +1170,6 @@
                             className="upload-button"
                         >
                             Use Sample Data
-                        </button>
-                        <button 
-                            onClick={() => {
-                                const testState = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-                                console.log('Testing Whoop auth redirect...');
-                                console.log('Test state:', testState);
-                                console.log('Redirect URL will be:', `${CONFIG.WHOOP.BASE_URL}/oauth/oauth2/auth?client_id=${CONFIG.WHOOP.CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(CONFIG.WHOOP.REDIRECT_URI)}&scope=${encodeURIComponent(CONFIG.WHOOP.SCOPES)}&state=${testState}`);
-                            }}
-                            className="upload-button"
-                            style={{fontSize: '12px', padding: '4px 8px'}}
-                        >
-                            Debug Auth URL
                         </button>
                         <div style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>
                             CSV format: date,recovery,sleep_score,strain
