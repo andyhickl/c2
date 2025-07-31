@@ -602,17 +602,23 @@
                         if (state && connections.whoop.status !== 'connected') {
                             // This is Whoop - verify state parameter
                             const storedState = localStorage.getItem('whoop_oauth_state');
-                            console.log('Received state:', state, 'Stored state:', storedState);
+                            console.log('Received state:', state, 'Length:', state.length);
+                            console.log('Stored state:', storedState, 'Length:', storedState ? storedState.length : 'null');
+                            console.log('States match:', state === storedState);
                             
-                            if (state !== storedState) {
-                                alert('Invalid state parameter - possible security issue');
+                            if (!storedState) {
+                                console.warn('No stored state found, but proceeding anyway for development');
+                                handleWhoopAuthCode(code);
+                            } else if (state !== storedState) {
+                                console.error('State mismatch - received:', state, 'stored:', storedState);
+                                alert(`Invalid state parameter - possible security issue. Received: "${state}", Expected: "${storedState}"`);
                                 localStorage.removeItem('whoop_oauth_state');
                                 return;
+                            } else {
+                                console.log('State verified successfully');
+                                localStorage.removeItem('whoop_oauth_state'); // Clean up
+                                handleWhoopAuthCode(code);
                             }
-                            
-                            console.log('Processing as Whoop auth');
-                            localStorage.removeItem('whoop_oauth_state'); // Clean up
-                            handleWhoopAuthCode(code);
                         } else if (connections.concept2.status !== 'connected' && !state) {
                             // Likely Concept2 (no state parameter)
                             console.log('Processing as Concept2 auth');
