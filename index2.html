@@ -944,6 +944,8 @@
                 // Generate a random state parameter for security
                 const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
                 
+                console.log('Generated state parameter:', state, 'Length:', state.length);
+                
                 // Store the state in localStorage to verify it later
                 localStorage.setItem('whoop_oauth_state', state);
                 
@@ -955,8 +957,11 @@
                     state: state
                 });
                 
-                console.log('Redirecting to Whoop with state:', state);
-                window.location.href = `${CONFIG.WHOOP.BASE_URL}/oauth/oauth2/auth?${params}`;
+                const authUrl = `${CONFIG.WHOOP.BASE_URL}/oauth/oauth2/auth?${params.toString()}`;
+                console.log('Full auth URL:', authUrl);
+                console.log('URL params object:', params.toString());
+                
+                window.location.href = authUrl;
             }
 
             // File upload handlers
