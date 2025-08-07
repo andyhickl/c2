@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rowing Workout Calendar</title>
+  <style>
+    :root{
+      --bg:#0b0d10;--fg:#e8eef5;--muted:#a8b3c2;--card:#151a21;--accent:#6aa9ff;--green:#3fb950;--yellow:#f2cc60;--red:#ff6b6b;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;background:var(--bg);color:var(--fg)}
+    header{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,var(--bg),#0b0d10ef 70%,#0b0d1000)}
+    .wrap{max-width:1100px;margin:0 auto;padding:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid #202733;border-radius:14px;padding:14px}
+    .card h3{margin:0 0 8px 0;font-size:16px;color:var(--muted);font-weight:600}
+    input,select,button,textarea{background:#0f1319;border:1px solid #263140;color:var(--fg);border-radius:10px;padding:10px;font-size:14px}
+    input[type="number"]{width:110px}
+    input[type="time"]{width:130px}
+    .btn{cursor:pointer}
+    .btn.primary{background:var(--accent);color:#071625;border:0}
+    .btn.ghost{background:transparent;border-color:#2b3644}
+    .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+    .day{background:#0f1319;border:1px solid #202733;border-radius:10px;min-height:110px;padding:8px;position:relative}
+    .day .date{font-size:12px;color:var(--muted)}
+    .circle{position:absolute;bottom:8px;right:8px;border-radius:999px;opacity:.9;border:1px solid #0003}
+    .day .mini{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.25}
+    .toolbar{display:flex;align-items:center;gap:8px}
+    .toolbar .spacer{flex:1}
+    .notice{color:var(--muted);font-size:12px}
+    .linklike{color:var(--accent);text-decoration:underline;cursor:pointer}
+    dialog{border:0;background:var(--card);color:var(--fg);border-radius:12px;padding:0;max-width:520px;width:90%}
+    dialog header{padding:12px 14px;border-bottom:1px solid #233040}
+    dialog .content{padding:14px}
+    dialog footer{padding:12px 14px;border-top:1px solid #233040;display:flex;gap:8px;justify-content:flex-end}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .danger{color:#ff8383}
+    .small{font-size:12px;color:var(--muted)}
+    @media (max-width:700px){.grid{grid-template-columns:repeat(7, minmax(40px,1fr))}.day{min-height:90px}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap toolbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn" id="prevMonth">◀</button>
+        <h2 id="monthLabel" style="margin:0"></h2>
+        <button class="btn" id="nextMonth">▶</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="exportJsonBtn">Export JSON</button>
+      <button class="btn ghost" id="importJsonBtn">Import JSON</button>
+      <button class="btn primary" id="exportIcsBtn">Export ICS</button>
+    </div>
+  </header>
+
+  <main class="wrap" style="display:grid;gap:14px">
+    <section class="card">
+      <h3>Add / Edit Workout</h3>
+      <div class="row">
+        <label>Date<br><input type="date" id="dateInput"></label>
+        <label>Distance (m)<br><input type="number" id="distanceInput" min="1" step="1" placeholder="10000"></label>
+        <label>Total Time (hh:mm:ss)<br><input type="text" id="timeInput" placeholder="0:51:11"></label>
+        <label>Threshold split (/500m)<br><input type="text" id="thresholdInput" value="2:34"></label>
+        <label>Default Calendar Start Time<br><input type="time" id="startTimeInput" value="06:00"></label>
+        <div style="align-self:end;display:flex;gap:8px">
+          <button class="btn primary" id="saveBtn">Save</button>
+          <button class="btn" id="clearFormBtn">Clear</button>
+        </div>
+      </div>
+      <div class="small" id="calcPreview"></div>
+    </section>
+
+    <section class="card">
+      <h3>Calendar</h3>
+      <div class="grid" id="calendar"></div>
+      <div class="small" style="margin-top:8px">Circle color = intensity (IF): <span style="color:var(--green)">green</span> &lt;0.75, <span style="color:var(--yellow)">yellow</span> 0.75–0.90, <span style="color:var(--red)">red</span> ≥0.90. Circle size ∝ TSS.</div>
+    </section>
+
+    <section class="card">
+      <h3>Persistence</h3>
+      <div class="row">
+        <div class="notice">All data is saved locally in your browser (localStorage). Use Export to save a JSON/ICS file to your repo for GitHub Pages. (Optional GitHub sync coming soon.)</div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="editDialog">
+    <header><strong id="dlgTitle">Edit Workout</strong></header>
+    <div class="content">
+      <div class="two">
+        <label>Date<br><input type="date" id="dlgDate"></label>
+        <label>Distance (m)<br><input type="number" id="dlgDistance" min="1" step="1"></label>
+        <label>Total Time (hh:mm:ss)<br><input type="text" id="dlgTime"></label>
+        <label>Threshold split (/500m)<br><input type="text" id="dlgThreshold"></label>
+      </div>
+      <div class="small" id="dlgPreview"></div>
+      <div class="small danger" id="dlgError"></div>
+    </div>
+    <footer>
+      <button class="btn danger" id="deleteBtn">Delete</button>
+      <button class="btn" id="cancelBtn">Cancel</button>
+      <button class="btn primary" id="updateBtn">Update</button>
+    </footer>
+  </dialog>
+
+  <input type="file" accept="application/json" id="filePicker" style="display:none" />
+
+  <script>
+    // --- Utility functions ---
+    const pad = n => String(n).padStart(2,'0');
+    function parseHMS(str){
+      if(!str) return NaN;
+      const parts = str.trim().split(':').map(Number);
+      if(parts.some(isNaN)) return NaN;
+      if(parts.length===3){return parts[0]*3600+parts[1]*60+parts[2];}
+      if(parts.length===2){return parts[0]*60+parts[1];}
+      if(parts.length===1){return parts[0];}
+      return NaN;
+    }
+    function parseSplit(str){ // mm:ss
+      return parseHMS(str);
+    }
+    function fmtHMS(sec){
+      sec = Math.round(sec);
+      const h=Math.floor(sec/3600); const m=Math.floor((sec%3600)/60); const s=sec%60;
+      return (h>0? h+':':'')+pad(m)+':'+pad(s);
+    }
+    function fmtSplit(secPer500){
+      const m = Math.floor(secPer500/60), s = Math.round(secPer500%60);
+      return `${m}:${pad(s)}`;
+    }
+
+    // TSS/IF via pace-based model: IF = (t_th / t_w)^3; TSS = (dur_sec * IF^2 / 3600) * 100
+    function calcStats(distance_m, duration_s, threshSplit_s){
+      if(!distance_m || !duration_s || !threshSplit_s) return null;
+      const splits = duration_s / (distance_m/500);
+      const IF = Math.pow(threshSplit_s / splits, 3);
+      const TSS = (duration_s * IF * IF / 3600) * 100;
+      return {splits, IF, TSS};
+    }
+
+    // Storage
+    const STORE_KEY = 'rowing_calendar_v1';
+    const SETTINGS_KEY = 'rowing_calendar_settings_v1';
+
+    function loadData(){
+      try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }catch{ return {}; }
+    }
+    function saveData(data){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+
+    function loadSettings(){
+      const def = { thresholdSplit: '2:34', startTime: '06:00' };
+      try{ return Object.assign(def, JSON.parse(localStorage.getItem(SETTINGS_KEY))||{});}catch{ return def; }
+    }
+    function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+
+    // State
+    let data = loadData(); // { 'YYYY-MM-DD': {distance, duration, threshold?} }
+    let settings = loadSettings();
+    let current = new Date(); current.setDate(1);
+
+    // Elements
+    const dateInput = document.getElementById('dateInput');
+    const distanceInput = document.getElementById('distanceInput');
+    const timeInput = document.getElementById('timeInput');
+    const thresholdInput = document.getElementById('thresholdInput');
+    const startTimeInput = document.getElementById('startTimeInput');
+    const saveBtn = document.getElementById('saveBtn');
+    const clearFormBtn = document.getElementById('clearFormBtn');
+    const calcPreview = document.getElementById('calcPreview');
+
+    const prevMonthBtn = document.getElementById('prevMonth');
+    const nextMonthBtn = document.getElementById('nextMonth');
+    const monthLabel = document.getElementById('monthLabel');
+    const calendar = document.getElementById('calendar');
+
+    const exportJsonBtn = document.getElementById('exportJsonBtn');
+    const importJsonBtn = document.getElementById('importJsonBtn');
+    const exportIcsBtn = document.getElementById('exportIcsBtn');
+    const filePicker = document.getElementById('filePicker');
+
+    const dlg = document.getElementById('editDialog');
+    const dlgTitle = document.getElementById('dlgTitle');
+    const dlgDate = document.getElementById('dlgDate');
+    const dlgDistance = document.getElementById('dlgDistance');
+    const dlgTime = document.getElementById('dlgTime');
+    const dlgThreshold = document.getElementById('dlgThreshold');
+    const dlgPreview = document.getElementById('dlgPreview');
+    const dlgError = document.getElementById('dlgError');
+    const updateBtn = document.getElementById('updateBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+
+    // Init inputs
+    const today = new Date();
+    dateInput.valueAsDate = today;
+    thresholdInput.value = settings.thresholdSplit;
+    startTimeInput.value = settings.startTime;
+
+    function ymd(d){ return d.toISOString().slice(0,10); }
+
+    function renderMonth(){
+      const year = current.getFullYear();
+      const month = current.getMonth();
+      const tmp = new Date(year, month, 1);
+      monthLabel.textContent = tmp.toLocaleString(undefined,{month:'long',year:'numeric'});
+      calendar.innerHTML = '';
+
+      const firstDay = new Date(year, month, 1);
+      const startWeekday = (firstDay.getDay()+6)%7; // make Monday=0 if you want; using Monday start here
+      const daysInMonth = new Date(year, month+1, 0).getDate();
+
+      // Add leading blanks
+      for(let i=0;i<startWeekday;i++){
+        const cell = document.createElement('div');
+        cell.className='day';
+        calendar.appendChild(cell);
+      }
+
+      for(let day=1; day<=daysInMonth; day++){
+        const d = new Date(year, month, day);
+        const key = ymd(d);
+        const cell = document.createElement('div');
+        cell.className='day';
+        const head = document.createElement('div'); head.className='date'; head.textContent = day; cell.appendChild(head);
+
+        if(data[key]){
+          const e = data[key];
+          const threshold_s = parseSplit(e.threshold || settings.thresholdSplit);
+          const stats = calcStats(e.distance, e.duration, threshold_s);
+          if(stats){
+            const mini = document.createElement('div'); mini.className='mini';
+            mini.innerHTML = `⏱️ ${fmtHMS(e.duration)} · 📏 ${e.distance.toLocaleString()}m<br>⚡ ${fmtSplit(stats.splits)}/500m · IF ${stats.IF.toFixed(2)} · TSS ${Math.round(stats.TSS)}`;
+            cell.appendChild(mini);
+
+            const circle = document.createElement('div'); circle.className='circle';
+            let color = 'var(--green)';
+            if(stats.IF>=0.90) color = 'var(--red)'; else if(stats.IF>=0.75) color = 'var(--yellow)';
+            const size = Math.max(10, Math.min(80, Math.sqrt(stats.TSS||1)*4));
+            circle.style.width = circle.style.height = size+'px';
+            circle.style.background = color;
+            cell.appendChild(circle);
+
+            cell.style.cursor='pointer';
+            cell.addEventListener('click', ()=> openEdit(key));
+          } else {
+            cell.addEventListener('click', ()=> openEdit(key));
+          }
+        } else {
+          cell.addEventListener('click', ()=> openNew(key));
+        }
+
+        calendar.appendChild(cell);
+      }
+    }
+
+    function openNew(key){
+      dateInput.value = key;
+      distanceInput.value = '';
+      timeInput.value = '';
+      thresholdInput.value = settings.thresholdSplit;
+      calcPreview.textContent='';
+      distanceInput.focus();
+    }
+
+    function openEdit(key){
+      const e = data[key];
+      dlgTitle.textContent = `Edit ${key}`;
+      dlgDate.value = key;
+      dlgDistance.value = e.distance;
+      dlgTime.value = fmtHMS(e.duration);
+      dlgThreshold.value = e.threshold || settings.thresholdSplit;
+      dlgError.textContent='';
+      updateDialogPreview();
+      dlg.showModal();
+    }
+
+    function updateDialogPreview(){
+      const dist = Number(dlgDistance.value);
+      const dur = parseHMS(dlgTime.value);
+      const thr = parseSplit(dlgThreshold.value);
+      const st = calcStats(dist,dur,thr);
+      dlgPreview.textContent = st ? `Split ${fmtSplit(st.splits)} | IF ${st.IF.toFixed(2)} | TSS ${Math.round(st.TSS)}` : '';
+    }
+
+    function updateFormPreview(){
+      const dist = Number(distanceInput.value);
+      const dur = parseHMS(timeInput.value);
+      const thr = parseSplit(thresholdInput.value || settings.thresholdSplit);
+      const st = calcStats(dist,dur,thr);
+      calcPreview.textContent = st ? `Split ${fmtSplit(st.splits)} | IF ${st.IF.toFixed(2)} | TSS ${Math.round(st.TSS)}` : '';
+    }
+
+    distanceInput.addEventListener('input', updateFormPreview);
+    timeInput.addEventListener('input', updateFormPreview);
+    thresholdInput.addEventListener('input', ()=>{ settings.thresholdSplit = thresholdInput.value; saveSettings(settings); updateFormPreview(); renderMonth(); });
+    startTimeInput.addEventListener('input', ()=>{ settings.startTime = startTimeInput.value; saveSettings(settings); });
+
+    saveBtn.addEventListener('click', ()=>{
+      const key = dateInput.value || ymd(new Date());
+      const dist = Number(distanceInput.value);
+      const dur = parseHMS(timeInput.value);
+      if(!key || !dist || !dur){ alert('Please provide date, distance, and time.'); return; }
+      const e = { distance: dist, duration: dur };
+      const thr = thresholdInput.value?.trim();
+      if(thr) e.threshold = thr;
+      data[key] = e; saveData(data);
+      renderMonth();
+      updateFormPreview();
+    });
+
+    clearFormBtn.addEventListener('click', ()=>{ distanceInput.value=''; timeInput.value=''; calcPreview.textContent=''; });
+
+    prevMonthBtn.addEventListener('click', ()=>{ current = new Date(current.getFullYear(), current.getMonth()-1, 1); renderMonth(); });
+    nextMonthBtn.addEventListener('click', ()=>{ current = new Date(current.getFullYear(), current.getMonth()+1, 1); renderMonth(); });
+
+    // Edit dialog events
+    dlgDistance.addEventListener('input', updateDialogPreview);
+    dlgTime.addEventListener('input', updateDialogPreview);
+    dlgThreshold.addEventListener('input', updateDialogPreview);
+
+    cancelBtn.addEventListener('click', ()=> dlg.close());
+    deleteBtn.addEventListener('click', ()=>{
+      const key = dlgDate.value;
+      if(confirm('Delete this entry?')){
+        delete data[key];
+        saveData(data);
+        dlg.close();
+        renderMonth();
+      }
+    });
+
+    updateBtn.addEventListener('click', ()=>{
+      const keyOld = dlgTitle.textContent.replace('Edit ','');
+      const keyNew = dlgDate.value;
+      const dist = Number(dlgDistance.value);
+      const dur = parseHMS(dlgTime.value);
+      if(!keyNew || !dist || !dur){ dlgError.textContent='Please provide date, distance, and time.'; return; }
+      const e = { distance: dist, duration: dur };
+      const thr = dlgThreshold.value?.trim();
+      if(thr) e.threshold = thr;
+      if(keyOld!==keyNew) delete data[keyOld];
+      data[keyNew] = e; saveData(data);
+      dlg.close(); renderMonth();
+    });
+
+    // JSON import/export
+    exportJsonBtn.addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify({data, settings}, null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='rowing_calendar.json'; a.click(); URL.revokeObjectURL(a.href);
+    });
+
+    importJsonBtn.addEventListener('click', ()=> filePicker.click());
+    filePicker.addEventListener('change', (e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const obj = JSON.parse(reader.result);
+          if(obj.data) { data = obj.data; saveData(data); }
+          if(obj.settings) { settings = Object.assign(settings, obj.settings); saveSettings(settings); thresholdInput.value=settings.thresholdSplit; startTimeInput.value=settings.startTime; }
+          renderMonth();
+        }catch(err){ alert('Invalid JSON'); }
+      };
+      reader.readAsText(file);
+    });
+
+    // ICS export (download a file you can commit to your Pages repo)
+    exportIcsBtn.addEventListener('click', ()=>{
+      const ics = buildICS();
+      const blob = new Blob([ics], {type:'text/calendar'});
+      const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='rowing_calendar.ics'; a.click(); URL.revokeObjectURL(a.href);
+    });
+
+    function buildICS(){
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      const lines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Rowing Calendar//EN',
+      ];
+      const startTime = settings.startTime || '06:00';
+      const [sh, sm] = startTime.split(':').map(Number);
+      for(const [date, e] of Object.entries(data)){
+        const d = new Date(date+'T00:00:00');
+        d.setHours(sh, sm||0, 0, 0);
+        const dt = toLocalICS(d);
+        const thr = parseSplit(e.threshold || settings.thresholdSplit);
+        const st = calcStats(e.distance, e.duration, thr);
+        const sum = `Row: ${e.distance}m in ${fmtHMS(e.duration)} (${fmtSplit(st.splits)}/500m) — TSS ${Math.round(st.TSS)}, IF ${st.IF.toFixed(2)}`;
+        lines.push(
+          'BEGIN:VEVENT',
+          `UID:${date}-rowing@local`,
+          `DTSTAMP:${toLocalICS(new Date())}`,
+          `DTSTART;TZID=${tz}:${dt}`,
+          `DURATION:${toISODuration(e.duration)}`,
+          `SUMMARY:${escapeICS(sum)}`,
+          `DESCRIPTION:${escapeICS(sum)}`,
+          'END:VEVENT'
+        );
+      }
+      lines.push('END:VCALENDAR');
+      return lines.join('\r\n');
+    }
+
+    function toISODuration(seconds){
+      const h = Math.floor(seconds/3600), m = Math.floor((seconds%3600)/60), s = Math.floor(seconds%60);
+      return `PT${h? h+'H':''}${m? m+'M':''}${s? s+'S':''}` || 'PT0S';
+    }
+    function toLocalICS(d){ // YYYYMMDDTHHMMSS
+      const yyyy = d.getFullYear();
+      const mm = pad(d.getMonth()+1);
+      const dd = pad(d.getDate());
+      const hh = pad(d.getHours());
+      const mi = pad(d.getMinutes());
+      const ss = pad(d.getSeconds());
+      return `${yyyy}${mm}${dd}T${hh}${mi}${ss}`;
+    }
+    function escapeICS(str){
+      return String(str).replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
+    }
+
+    // Initial render
+    renderMonth();
+    updateFormPreview();
+  </script>
+</body>
+</html>
