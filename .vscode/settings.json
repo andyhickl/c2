@@ -1,0 +1,12 @@
+{
+  "emeraldwalk.runonsave": {
+    "commands": [
+      {
+        "match": ".*",
+        "cmd": "bash \"${workspaceFolder}/scripts/autocommit.sh\"",
+        "isAsync": true,
+        "silent": true
+      }
+    ]
+  }
+}
