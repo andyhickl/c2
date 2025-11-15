@@ -50,7 +50,7 @@
       </div>
       <div class="spacer"></div>
       <button class="btn ghost" id="exportJsonBtn">Export JSON</button>
-      <button class="btn ghost" id="importJsonBtn">Import JSON</button>
+      <button class="btn ghost" id="importCsvBtn">Import CSV</button>
       <button class="btn primary" id="exportIcsBtn">Export ICS</button>
     </div>
   </header>
@@ -105,7 +105,7 @@
     </footer>
   </dialog>
 
-  <input type="file" accept="application/json" id="filePicker" style="display:none" />
+  <input type="file" accept="text/csv,.csv" id="filePicker" style="display:none" />
 
   <script>
     // --- Utility functions ---
@@ -346,26 +346,139 @@
       dlg.close(); renderMonth();
     });
 
-    // JSON import/export
+    // JSON export
     exportJsonBtn.addEventListener('click', ()=>{
       const blob = new Blob([JSON.stringify({data, settings}, null, 2)], {type:'application/json'});
       const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='rowing_calendar.json'; a.click(); URL.revokeObjectURL(a.href);
     });
 
-    importJsonBtn.addEventListener('click', ()=> filePicker.click());
+    // CSV import (concept2-season-2026.csv style)
+    const importCsvBtn = document.getElementById('importCsvBtn');
+    importCsvBtn.addEventListener('click', ()=> filePicker.click());
     filePicker.addEventListener('change', (e)=>{
       const file = e.target.files[0]; if(!file) return;
-      const reader = new FileReader();
-      reader.onload = ()=>{
-        try{
-          const obj = JSON.parse(reader.result);
-          if(obj.data) { data = obj.data; saveData(data); }
-          if(obj.settings) { settings = Object.assign(settings, obj.settings); saveSettings(settings); thresholdInput.value=settings.thresholdSplit; startTimeInput.value=settings.startTime; }
-          renderMonth();
-        }catch(err){ alert('Invalid JSON'); }
-      };
-      reader.readAsText(file);
+      handleCSVFile(file).catch(err => { console.error(err); alert('CSV import failed: '+err.message); });
     });
+
+    async function handleCSVFile(file){
+      const text = await file.text();
+      const rows = parseCSV(text);
+      if(!rows.length) throw new Error('No rows found in CSV');
+
+      // Determine if rows contain a date column
+      const hasDate = rows[0] && Object.prototype.hasOwnProperty.call(rows[0],'date');
+      if(!hasDate){
+        // If CSV has no date column, do not drop existing dates per requirement
+        // Try to interpret rows as additional values without dates: abort for safety
+        if(!confirm('CSV has no `date` column — import will be ignored. Continue?')) return;
+      }
+
+      // Ask user whether to replace the entire date range present in the CSV
+      const replaceRange = confirm('Replace entire date range covered by this CSV? (OK = yes — existing entries within that range will be removed)');
+
+      applyCSVRows(rows, { replaceRange });
+
+      // Optionally ask to persist the CSV to GitHub (commit to repo)
+      if(confirm('Upload CSV to GitHub repo `andyhickl/c2` as `data/' + file.name + '`? You will be prompted for a Personal Access Token with repo scope.')){
+        const token = prompt('Enter a GitHub Personal Access Token (will not be stored). Token needs `repo` scope to create/update files.');
+        if(token){
+          try{
+            await uploadFileToGitHub('andyhickl','c2','data/'+file.name, file, token);
+            alert('Uploaded to GitHub: data/'+file.name);
+          }catch(err){
+            console.error(err);
+            alert('Failed to upload to GitHub: '+err.message);
+          }
+        }
+      }
+    }
+
+    function parseCSV(text){
+      const lines = text.split(/\r?\n/).filter(l=>l.trim()!='');
+      if(!lines.length) return [];
+      const header = lines[0].split(/,|;|\t/).map(h=>h.trim().toLowerCase());
+      const rows = [];
+      for(let i=1;i<lines.length;i++){
+        const cols = lines[i].split(/,|;|\t/).map(c=>c.trim());
+        if(cols.length===0) continue;
+        const row = {};
+        for(let j=0;j<header.length;j++){
+          const key = header[j];
+          if(!key) continue;
+          row[key] = cols[j] || '';
+        }
+        // normalize date key to 'date' with ISO yyyy-mm-dd if possible
+        if(row.date){
+          const d = new Date(row.date);
+          if(!isNaN(d)) row.date = d.toISOString().slice(0,10);
+        }
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    function applyCSVRows(rows, opts={replaceRange:false}){
+      // rows: array of {date, distance, time, threshold?}
+      // compute min/max dates
+      const dates = rows.map(r=>r.date).filter(Boolean);
+      let minDate=null, maxDate=null;
+      if(dates.length){
+        minDate = dates.reduce((a,b)=> a<b? a:b);
+        maxDate = dates.reduce((a,b)=> a>b? a:b);
+      }
+
+      if(opts.replaceRange && minDate && maxDate){
+        // remove existing entries within range
+        for(const key of Object.keys(data)){
+          if(key >= minDate && key <= maxDate) delete data[key];
+        }
+      }
+
+      // apply rows (overwrite any dates present)
+      for(const r of rows){
+        if(!r.date) continue; // skip rows without dates
+        const distance = Number((r.distance||r.m||r.meters||r['distance(m)']||'').replace(/[^0-9.]/g,'')) || 0;
+        // time fields may be 'time' or 'duration' or 'total time' in hh:mm:ss or mm:ss
+        const timeStr = r.time || r.duration || r['total time'] || r['total_time'] || r['total'];
+        const duration = parseHMS(timeStr || r['time'] || r['duration'] || r['total time'] || '');
+        if(!distance || !duration){
+          // skip incomplete rows
+          continue;
+        }
+        const entry = { distance: distance, duration: duration };
+        if(r.threshold) entry.threshold = r.threshold;
+        data[r.date] = entry;
+      }
+
+      saveData(data);
+      renderMonth();
+    }
+
+    // Upload file to GitHub repo via REST API (creates or updates file)
+    async function uploadFileToGitHub(owner, repo, path, file, token){
+      const api = 'https://api.github.com';
+      const urlGet = `${api}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+      const headers = { 'Authorization': 'token '+token, 'Accept':'application/vnd.github+json' };
+
+      // check if file exists to get sha
+      let sha = null;
+      const resGet = await fetch(urlGet, { method:'GET', headers });
+      if(resGet.status===200){
+        const body = await resGet.json(); sha = body.sha;
+      }
+
+      const content = await file.text();
+      const contentBase64 = btoa(unescape(encodeURIComponent(content)));
+      const commitMessage = `Add/Update ${path} via Rowing Calendar UI`;
+      const putBody = { message: commitMessage, content: contentBase64, branch: 'main' };
+      if(sha) putBody.sha = sha;
+
+      const resPut = await fetch(urlGet, { method:'PUT', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify(putBody) });
+      if(!resPut.ok){
+        const err = await resPut.text(); throw new Error('GitHub upload failed: '+resPut.status+' '+err);
+      }
+      return await resPut.json();
+    }
 
     // ICS export (download a file you can commit to your Pages repo)
     exportIcsBtn.addEventListener('click', ()=>{
