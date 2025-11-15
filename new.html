@@ -377,20 +377,6 @@
       const replaceRange = confirm('Replace entire date range covered by this CSV? (OK = yes — existing entries within that range will be removed)');
 
       applyCSVRows(rows, { replaceRange });
-
-      // Optionally ask to persist the CSV to GitHub (commit to repo)
-      if(confirm('Upload CSV to GitHub repo `andyhickl/c2` as `data/' + file.name + '`? You will be prompted for a Personal Access Token with repo scope.')){
-        const token = prompt('Enter a GitHub Personal Access Token (will not be stored). Token needs `repo` scope to create/update files.');
-        if(token){
-          try{
-            await uploadFileToGitHub('andyhickl','c2','data/'+file.name, file, token);
-            alert('Uploaded to GitHub: data/'+file.name);
-          }catch(err){
-            console.error(err);
-            alert('Failed to upload to GitHub: '+err.message);
-          }
-        }
-      }
     }
 
     function parseCSV(text){
@@ -454,31 +440,7 @@
       renderMonth();
     }
 
-    // Upload file to GitHub repo via REST API (creates or updates file)
-    async function uploadFileToGitHub(owner, repo, path, file, token){
-      const api = 'https://api.github.com';
-      const urlGet = `${api}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
-      const headers = { 'Authorization': 'token '+token, 'Accept':'application/vnd.github+json' };
-
-      // check if file exists to get sha
-      let sha = null;
-      const resGet = await fetch(urlGet, { method:'GET', headers });
-      if(resGet.status===200){
-        const body = await resGet.json(); sha = body.sha;
-      }
-
-      const content = await file.text();
-      const contentBase64 = btoa(unescape(encodeURIComponent(content)));
-      const commitMessage = `Add/Update ${path} via Rowing Calendar UI`;
-      const putBody = { message: commitMessage, content: contentBase64, branch: 'main' };
-      if(sha) putBody.sha = sha;
-
-      const resPut = await fetch(urlGet, { method:'PUT', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify(putBody) });
-      if(!resPut.ok){
-        const err = await resPut.text(); throw new Error('GitHub upload failed: '+resPut.status+' '+err);
-      }
-      return await resPut.json();
-    }
+    // (GitHub upload removed) -- file persistence via PAT was removed per user request.
 
     // ICS export (download a file you can commit to your Pages repo)
     exportIcsBtn.addEventListener('click', ()=>{
@@ -538,6 +500,21 @@
     // Initial render
     renderMonth();
     updateFormPreview();
+
+    // Seed calendar with CSV file from repo if present (concept2-season-2026.csv)
+    (async function seedFromRepo(){
+      try{
+        const res = await fetch('concept2-season-2026.csv');
+        if(!res.ok) return;
+        const text = await res.text();
+        const rows = parseCSV(text);
+        if(rows && rows.length){
+          // Apply rows and replace existing entries within the CSV date range
+          applyCSVRows(rows, { replaceRange: true });
+          console.log('Seeded calendar from concept2-season-2026.csv');
+        }
+      }catch(err){ console.warn('No seed CSV found or failed to parse:', err); }
+    })();
   </script>
 </body>
 </html>
