@@ -333,7 +333,7 @@
             }
         };
 
-        // Sample data for demonstration - Full July 2025
+        // Sample data (unchanged)
         const SAMPLE_WHOOP_DATA = [
             { date: '2025-07-01', recovery: 85, sleep_score: 92, strain: 12.5 },
             { date: '2025-07-02', recovery: 78, sleep_score: 88, strain: 15.2 },
@@ -436,7 +436,7 @@
             { date: '2025-07-31', tremor_score: 3.5, dyskinesia_risk: 'medium' }
         ];
 
-        // Utility functions (carried over from v1.0)
+        // Utility functions
         function formatTime(seconds) {
             if (!seconds || seconds === 0) return '0:00';
             const hours = Math.floor(seconds / 3600);
@@ -459,7 +459,7 @@
             return parseInt(timeString) || 0;
         }
 
-        // TSS/IF calculations (from v1.0)
+        // TSS/IF calculations
         function calculateTSS(workout, userFTP = 166, thresholdMethod = 'pace', thresholdPace = '2:34') {
             const duration = workout.time || 0;
             const distance = workout.distance || 0;
@@ -480,7 +480,6 @@
                 return Math.round(tss);
             }
             
-            // Power-based method fallback
             let watts = workout.watts || 0;
             if (watts === 0) {
                 const avgPaceSeconds = duration / (distance / 500);
@@ -548,16 +547,16 @@
         // Health score color mapping
         function getHealthScoreColor(score, type) {
             if (type === 'recovery' || type === 'sleep') {
-                if (score >= 80) return '#2ecc71'; // Green
-                if (score >= 60) return '#f39c12'; // Yellow
-                return '#e74c3c'; // Red
+                if (score >= 80) return '#2ecc71';
+                if (score >= 60) return '#f39c12';
+                return '#e74c3c';
             }
             if (type === 'strain') {
-                if (score <= 10) return '#2ecc71'; // Green
-                if (score <= 16) return '#f39c12'; // Yellow
-                return '#e74c3c'; // Red
+                if (score <= 10) return '#2ecc71';
+                if (score <= 16) return '#f39c12';
+                return '#e74c3c';
             }
-            return '#95a5a6'; // Gray default
+            return '#95a5a6';
         }
 
         function getTremorColor(score) {
@@ -572,14 +571,14 @@
                 concept2: { status: 'disconnected', data: [], token: null },
                 whoop: { status: 'disconnected', data: [], token: null },
                 appleHealth: { status: 'disconnected', data: [] },
-                tremorData: { status: 'disconnected', data: [] }
+                tremorData: { status: 'disconnected', data: [] },
+                masterDaily: { status: 'disconnected', data: [] }
             });
 
             const [selectedFiles, setSelectedFiles] = useState({});
-            const [whoopToken, setWhoopToken] = useState(null); // Store token for display
+            const [whoopToken, setWhoopToken] = useState(null);
 
             useEffect(() => {
-                // Check for authorization codes in URL from both Concept2 and Whoop
                 const checkForAuthCode = () => {
                     const urlParams = new URLSearchParams(window.location.search);
                     const code = urlParams.get('code');
@@ -587,45 +586,27 @@
                     const error = urlParams.get('error');
                     const errorDescription = urlParams.get('error_description');
                     
-                    console.log('Full URL:', window.location.href);
-                    console.log('URL search params:', window.location.search);
-                    console.log('Checking for auth code. Code:', code, 'State:', state, 'Error:', error);
-                    if (errorDescription) console.log('Error description:', errorDescription);
-                    console.log('Current connection status - C2:', connections.concept2.status, 'Whoop:', connections.whoop.status);
-                    
                     if (error) {
                         alert(`OAuth error: ${error} - ${errorDescription || 'Unknown error'}`);
                         return;
                     }
                     
                     if (code) {
-                        // Determine which service based on existing connections or state parameter
                         if (state && connections.whoop.status !== 'connected') {
-                            // This is Whoop - verify state parameter
                             const storedState = localStorage.getItem('whoop_oauth_state');
-                            console.log('Received state:', state, 'Length:', state.length);
-                            console.log('Stored state:', storedState, 'Length:', storedState ? storedState.length : 'null');
-                            console.log('States match:', state === storedState);
-                            
                             if (!storedState) {
                                 console.warn('No stored state found, but proceeding anyway for development');
                                 handleWhoopAuthCode(code);
                             } else if (state !== storedState) {
-                                console.error('State mismatch - received:', state, 'stored:', storedState);
-                                alert(`Invalid state parameter - possible security issue. Received: "${state}", Expected: "${storedState}"`);
+                                alert('Invalid state parameter - possible security issue.');
                                 localStorage.removeItem('whoop_oauth_state');
                                 return;
                             } else {
-                                console.log('State verified successfully');
-                                localStorage.removeItem('whoop_oauth_state'); // Clean up
+                                localStorage.removeItem('whoop_oauth_state');
                                 handleWhoopAuthCode(code);
                             }
                         } else if (connections.concept2.status !== 'connected' && !state) {
-                            // Likely Concept2 (no state parameter)
-                            console.log('Processing as Concept2 auth');
                             handleC2AuthCode(code);
-                        } else {
-                            console.log('Code found but unclear which service or services already connected');
                         }
                     }
                 };
@@ -637,17 +618,10 @@
 
             async function handleWhoopAuthCode(code) {
                 try {
-                    console.log('Handling Whoop auth code:', code);
-                    
-                    // Since we can't do token exchange in browser due to CORS,
-                    // let's provide the user with the curl command they can run
                     const curlCommand = `curl -X POST "https://api.prod.whoop.com/oauth/oauth2/token" \\
   -H "Content-Type: application/x-www-form-urlencoded" \\
   -d "grant_type=authorization_code&client_id=${CONFIG.WHOOP.CLIENT_ID}&client_secret=${CONFIG.WHOOP.CLIENT_SECRET}&code=${code}&redirect_uri=${encodeURIComponent(CONFIG.WHOOP.REDIRECT_URI)}"`;
                     
-                    console.log('Curl command to get token:', curlCommand);
-                    
-                    // For now, use sample data and show the user how to get real data
                     const whoopData = SAMPLE_WHOOP_DATA;
                     
                     setConnections(prev => ({
@@ -660,186 +634,11 @@
                         curlCommand: curlCommand
                     });
                     
-                    // Clean up URL
                     window.history.replaceState({}, document.title, window.location.pathname);
-                    
-                    alert(`Whoop OAuth completed! Your authorization code: ${code.substring(0, 20)}...\n\nCheck the console or the Data Sources tab for the curl command to get your access token.`);
+                    alert(`Whoop OAuth completed! Code: ${code.substring(0, 20)}...`);
                     
                 } catch (err) {
-                    console.error('Whoop Auth error:', err);
                     alert('Failed to authenticate with Whoop: ' + err.message);
-                }
-            }
-
-            async function exchangeWhoopCodeForToken(code) {
-                try {
-                    const response = await fetch(`${CONFIG.WHOOP.BASE_URL}/oauth/oauth2/token`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: new URLSearchParams({
-                            grant_type: 'authorization_code',
-                            client_id: CONFIG.WHOOP.CLIENT_ID,
-                            client_secret: CONFIG.WHOOP.CLIENT_SECRET,
-                            code: code,
-                            redirect_uri: CONFIG.WHOOP.REDIRECT_URI
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`Whoop token exchange failed: ${response.status} - ${errorText}`);
-                    }
-                    
-                    const data = await response.json();
-                    return data.access_token;
-                } catch (error) {
-                    console.error('Token exchange failed (likely CORS issue):', error);
-                    // For demo purposes, return a fake token since we can't do token exchange from browser
-                    throw new Error('CORS_ERROR: Browser cannot directly exchange tokens with Whoop API. In production, this would be handled by a backend server.');
-                }
-            }
-
-            async function fetchWhoopData(accessToken) {
-                try {
-                    console.log('Fetching Whoop data with token:', accessToken ? 'Token exists' : 'No token');
-                    
-                    // Fetch recovery data
-                    console.log('Fetching recovery data...');
-                    const recoveryResponse = await fetch(`${CONFIG.WHOOP.BASE_URL}/developer/v1/recovery`, {
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                            'Accept': 'application/json'
-                        }
-                    });
-                    
-                    console.log('Recovery response status:', recoveryResponse.status);
-                    
-                    if (!recoveryResponse.ok) {
-                        const errorText = await recoveryResponse.text();
-                        console.error('Recovery API error:', errorText);
-                        throw new Error(`Failed to fetch recovery data: ${recoveryResponse.status} - ${errorText}`);
-                    }
-                    
-                    const recoveryData = await recoveryResponse.json();
-                    console.log('Recovery data:', recoveryData);
-                    
-                    // Fetch sleep data
-                    console.log('Fetching sleep data...');
-                    const sleepResponse = await fetch(`${CONFIG.WHOOP.BASE_URL}/developer/v1/activity/sleep`, {
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                            'Accept': 'application/json'
-                        }
-                    });
-                    
-                    console.log('Sleep response status:', sleepResponse.status);
-                    const sleepData = sleepResponse.ok ? await sleepResponse.json() : { records: [] };
-                    if (sleepResponse.ok) {
-                        console.log('Sleep data:', sleepData);
-                    } else {
-                        const sleepError = await sleepResponse.text();
-                        console.error('Sleep API error:', sleepError);
-                    }
-                    
-                    // Fetch cycles data (for strain)
-                    console.log('Fetching cycles data...');
-                    const cyclesResponse = await fetch(`${CONFIG.WHOOP.BASE_URL}/developer/v1/cycle`, {
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                            'Accept': 'application/json'
-                        }
-                    });
-                    
-                    console.log('Cycles response status:', cyclesResponse.status);
-                    const cyclesData = cyclesResponse.ok ? await cyclesResponse.json() : { records: [] };
-                    if (cyclesResponse.ok) {
-                        console.log('Cycles data:', cyclesData);
-                    } else {
-                        const cyclesError = await cyclesResponse.text();
-                        console.error('Cycles API error:', cyclesError);
-                    }
-                    
-                    // Transform data to our format
-                    const transformedData = transformWhoopData(recoveryData, sleepData, cyclesData);
-                    console.log('Transformed Whoop data:', transformedData);
-                    
-                    if (transformedData.length === 0) {
-                        console.warn('No Whoop data after transformation, using sample data');
-                        return SAMPLE_WHOOP_DATA;
-                    }
-                    
-                    return transformedData;
-                    
-                } catch (error) {
-                    console.error('Error fetching Whoop data:', error);
-                    alert('Error fetching Whoop data: ' + error.message + '. Using sample data instead.');
-                    // Return sample data on error for development
-                    return SAMPLE_WHOOP_DATA;
-                }
-            }
-
-            function transformWhoopData(recoveryData, sleepData, cyclesData) {
-                const recoveries = recoveryData.records || [];
-                const sleeps = sleepData.records || [];
-                const cycles = cyclesData.records || [];
-                
-                // Create a map by date
-                const dataByDate = {};
-                
-                // Process recovery data
-                recoveries.forEach(recovery => {
-                    if (recovery.score && recovery.score.recovery_score !== undefined) {
-                        const date = new Date(recovery.created_at).toISOString().split('T')[0];
-                        if (!dataByDate[date]) dataByDate[date] = {};
-                        dataByDate[date].recovery = recovery.score.recovery_score;
-                    }
-                });
-                
-                // Process sleep data
-                sleeps.forEach(sleep => {
-                    if (sleep.score && sleep.score.sleep_performance_percentage !== undefined) {
-                        const date = new Date(sleep.start).toISOString().split('T')[0];
-                        if (!dataByDate[date]) dataByDate[date] = {};
-                        dataByDate[date].sleep_score = sleep.score.sleep_performance_percentage;
-                    }
-                });
-                
-                // Process cycles data for strain
-                cycles.forEach(cycle => {
-                    if (cycle.score && cycle.score.strain !== undefined) {
-                        const date = new Date(cycle.start).toISOString().split('T')[0];
-                        if (!dataByDate[date]) dataByDate[date] = {};
-                        dataByDate[date].strain = cycle.score.strain;
-                    }
-                });
-                
-                // Convert to array format
-                return Object.entries(dataByDate).map(([date, data]) => ({
-                    date,
-                    recovery: data.recovery || 0,
-                    sleep_score: data.sleep_score || 0,
-                    strain: data.strain || 0
-                })).filter(item => item.recovery > 0 || item.sleep_score > 0 || item.strain > 0);
-            }
-
-            async function handleC2AuthCode(code) {
-                try {
-                    const token = await exchangeC2CodeForToken(code);
-                    const workoutData = await fetchC2Workouts(token);
-                    
-                    setConnections(prev => ({
-                        ...prev,
-                        concept2: { status: 'connected', data: workoutData, token: token }
-                    }));
-                    onDataUpdate('concept2', workoutData);
-                    
-                    // Clean up URL
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                } catch (err) {
-                    console.error('C2 Auth error:', err);
-                    alert('Failed to authenticate with Concept2: ' + err.message);
                 }
             }
 
@@ -883,6 +682,66 @@
                 return data.data || data.results || data || [];
             }
 
+            async function handleC2AuthCode(code) {
+                try {
+                    const token = await exchangeC2CodeForToken(code);
+                    const workoutData = await fetchC2Workouts(token);
+                    
+                    setConnections(prev => ({
+                        ...prev,
+                        concept2: { status: 'connected', data: workoutData, token: token }
+                    }));
+                    onDataUpdate('concept2', workoutData);
+                    
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } catch (err) {
+                    alert('Failed to authenticate with Concept2: ' + err.message);
+                }
+            }
+
+            async function handleC2Auth() {
+                const params = new URLSearchParams({
+                    client_id: CONFIG.CONCEPT2.CLIENT_ID,
+                    response_type: 'code',
+                    redirect_uri: CONFIG.CONCEPT2.REDIRECT_URI,
+                    scope: CONFIG.CONCEPT2.SCOPES
+                });
+                window.location.href = `${CONFIG.CONCEPT2.BASE_URL}/oauth/authorize?${params}`;
+            }
+
+            async function handleWhoopAuth() {
+                const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('whoop_oauth_state', state);
+                
+                const params = new URLSearchParams({
+                    client_id: CONFIG.WHOOP.CLIENT_ID,
+                    response_type: 'code',
+                    redirect_uri: CONFIG.WHOOP.REDIRECT_URI,
+                    scope: CONFIG.WHOOP.SCOPES,
+                    state: state
+                });
+                
+                const authUrl = `${CONFIG.WHOOP.BASE_URL}/oauth/oauth2/auth?${params.toString()}`;
+                window.location.href = authUrl;
+            }
+
+            // Generic CSV parser
+            async function parseCSV(csvText) {
+                return new Promise((resolve, reject) => {
+                    Papa.parse(csvText, {
+                        header: true,
+                        dynamicTyping: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            resolve(results.data);
+                        },
+                        error: function(error) {
+                            reject(error);
+                        }
+                    });
+                });
+            }
+
             // Concept2 CSV upload
             async function handleC2CSVUpload() {
                 const file = selectedFiles.concept2;
@@ -909,20 +768,13 @@
                         dynamicTyping: true,
                         skipEmptyLines: true,
                         complete: function(results) {
-                            if (results.errors.length > 0) {
-                                console.warn('CSV parsing warnings:', results.errors);
-                            }
-                            
-                            // Transform CSV data to our format - for C2 export format
                             const workouts = results.data.map(row => {
-                                // Map C2 export fields to our format
                                 const date = row.Date;
                                 const time = row['Work Time (Seconds)'] || 0;
                                 const distance = row['Work Distance'] || 0;
                                 const pace = row.Pace;
                                 const watts = row['Avg Watts'] || 0;
                                 
-                                // Convert pace string to seconds if needed
                                 let paceSeconds = 0;
                                 if (pace && typeof pace === 'string') {
                                     paceSeconds = parseTime(pace);
@@ -953,42 +805,7 @@
                     });
                 });
             }
-            async function handleC2Auth() {
-                const params = new URLSearchParams({
-                    client_id: CONFIG.CONCEPT2.CLIENT_ID,
-                    response_type: 'code',
-                    redirect_uri: CONFIG.CONCEPT2.REDIRECT_URI,
-                    scope: CONFIG.CONCEPT2.SCOPES
-                });
-                window.location.href = `${CONFIG.CONCEPT2.BASE_URL}/oauth/authorize?${params}`;
-            }
 
-            // Whoop OAuth - corrected implementation with state parameter
-            async function handleWhoopAuth() {
-                // Generate a random state parameter for security
-                const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-                
-                console.log('Generated state parameter:', state, 'Length:', state.length);
-                
-                // Store the state in localStorage to verify it later
-                localStorage.setItem('whoop_oauth_state', state);
-                
-                const params = new URLSearchParams({
-                    client_id: CONFIG.WHOOP.CLIENT_ID,
-                    response_type: 'code',
-                    redirect_uri: CONFIG.WHOOP.REDIRECT_URI,
-                    scope: CONFIG.WHOOP.SCOPES,
-                    state: state
-                });
-                
-                const authUrl = `${CONFIG.WHOOP.BASE_URL}/oauth/oauth2/auth?${params.toString()}`;
-                console.log('Full auth URL:', authUrl);
-                console.log('URL params object:', params.toString());
-                
-                window.location.href = authUrl;
-            }
-
-            // File upload handlers
             async function handleWhoopCSVUpload() {
                 const file = selectedFiles.whoop;
                 if (!file) return;
@@ -1014,22 +831,12 @@
                         dynamicTyping: true,
                         skipEmptyLines: true,
                         complete: function(results) {
-                            if (results.errors.length > 0) {
-                                console.warn('CSV parsing warnings:', results.errors);
-                            }
-                            
-                            // Transform CSV data to our format
-                            const whoopData = results.data.map(row => {
-                                return {
-                                    date: row.date,
-                                    recovery: parseFloat(row.recovery) || 0,
-                                    sleep_score: parseFloat(row.sleep_score) || 0,
-                                    strain: parseFloat(row.strain) || 0
-                                };
-                            }).filter(w => {
-                                // Filter out rows with no data
-                                return w.date && (w.recovery > 0 || w.sleep_score > 0 || w.strain > 0);
-                            });
+                            const whoopData = results.data.map(row => ({
+                                date: row.date,
+                                recovery: parseFloat(row.recovery) || 0,
+                                sleep_score: parseFloat(row.sleep_score) || 0,
+                                strain: parseFloat(row.strain) || 0
+                            })).filter(w => w.date && (w.recovery > 0 || w.sleep_score > 0 || w.strain > 0));
                             
                             resolve(whoopData);
                         },
@@ -1059,7 +866,6 @@
             }
 
             async function handleTremorDataUpload() {
-                // For demo, use sample data
                 setConnections(prev => ({
                     ...prev,
                     tremorData: { status: 'connected', data: SAMPLE_TREMOR_DATA }
@@ -1067,24 +873,58 @@
                 onDataUpdate('tremorData', SAMPLE_TREMOR_DATA);
             }
 
-            async function parseCSV(csvText) {
-                return new Promise((resolve, reject) => {
-                    Papa.parse(csvText, {
-                        header: true,
-                        dynamicTyping: true,
-                        skipEmptyLines: true,
-                        complete: function(results) {
-                            resolve(results.data);
-                        },
-                        error: function(error) {
-                            reject(error);
-                        }
-                    });
-                });
+            // NEW: Master Daily CSV upload (master_daily.csv)
+            async function handleMasterDailyUpload() {
+                const file = selectedFiles.masterDaily;
+                if (!file) return;
+
+                try {
+                    const text = await file.text();
+                    const parsedData = await parseCSV(text);
+
+                    // Mark everything as "connected" visually
+                    setConnections(prev => ({
+                        ...prev,
+                        masterDaily: { status: 'connected', data: parsedData },
+                        concept2: { ...prev.concept2, status: 'connected' },
+                        whoop: { ...prev.whoop, status: 'connected' },
+                        appleHealth: { ...prev.appleHealth, status: 'connected' }
+                    }));
+
+                    // Pass raw rows to App; it will map them into workouts/whoop/apple/tremor
+                    onDataUpdate('masterDaily', parsedData);
+                } catch (error) {
+                    alert('Error parsing Master Daily CSV: ' + error.message);
+                }
             }
 
             return (
                 <div className="data-sources-grid">
+                    {/* Master Daily CSV */}
+                    <div className={`data-source-card ${connections.masterDaily.status === 'connected' ? 'connected' : ''}`}>
+                        <div className="source-header">
+                            <div className="source-title">Master Daily CSV</div>
+                            <div className={`source-status status-${connections.masterDaily.status}`}>
+                                {connections.masterDaily.status}
+                            </div>
+                        </div>
+                        <p>Upload <code>master_daily.csv</code> (one row per date) combining Concept2, Whoop, and Apple Health.</p>
+                        <input
+                            type="file"
+                            accept=".csv"
+                            onChange={(e) => setSelectedFiles(prev => ({ ...prev, masterDaily: e.target.files[0] }))}
+                            className="file-input"
+                        />
+                        <button onClick={handleMasterDailyUpload} className="upload-button">
+                            Upload Master Daily CSV
+                        </button>
+                        <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                            Expects columns like <code>date</code>, <code>c2_distance_m</code>, <code>c2_work_time_s</code>,
+                            <code>whoop_recovery_pct</code>, <code>whoop_sleep_performance_pct</code>,
+                            <code>whoop_day_strain</code>, <code>apple_Walking speed(mi/hr)</code>, etc.
+                        </div>
+                    </div>
+
                     {/* Concept2 */}
                     <div className={`data-source-card ${connections.concept2.status === 'connected' ? 'connected' : ''}`}>
                         <div className="source-header">
@@ -1228,7 +1068,7 @@
             );
         }
 
-        // Enhanced Calendar Component
+        // Calendar Component (unchanged)
         function Calendar({ workouts, whoopData, appleHealthData, tremorData, userFTP, thresholdMethod, thresholdPace }) {
             const [currentDate, setCurrentDate] = useState(new Date());
             
@@ -1325,7 +1165,6 @@
                                         {day.getDate()}
                                     </div>
                                     
-                                    {/* Workout Circle */}
                                     {combinedWorkout && (() => {
                                         const tss = calculateTSS(combinedWorkout, userFTP, thresholdMethod, thresholdPace);
                                         const ifValue = calculateIF(combinedWorkout, userFTP, thresholdMethod, thresholdPace);
@@ -1352,7 +1191,6 @@
                                         );
                                     })()}
                                     
-                                    {/* Health Indicators - Whoop + PD Impact */}
                                     <div className="health-indicators">
                                         {whoopDay && (
                                             <>
@@ -1380,7 +1218,6 @@
                                             </>
                                         )}
                                         
-                                        {/* PD Impact Indicator - same size as Whoop circles */}
                                         {tremorDay && (
                                             <div 
                                                 className="health-circle"
@@ -1397,12 +1234,11 @@
                                         )}
                                     </div>
                                     
-                                    {/* Apple Health Summary */}
                                     {appleDay && (
                                         <div className="apple-health-summary">
-                                            {appleDay.steps?.toLocaleString()} steps<br/>
-                                            {appleDay.walking_speed?.toFixed(1)}m/s speed<br/>
-                                            {appleDay.double_support?.toFixed(2)}s dbl supp
+                                            {appleDay.steps != null ? `${appleDay.steps.toLocaleString()} steps` : ''}{appleDay.steps != null ? <br/> : null}
+                                            {appleDay.walking_speed != null ? `${appleDay.walking_speed.toFixed(2)} speed` : ''}{appleDay.walking_speed != null ? <br/> : null}
+                                            {appleDay.double_support != null ? `${appleDay.double_support.toFixed(2)} dbl supp` : ''}
                                         </div>
                                     )}
                                 </div>
@@ -1413,7 +1249,7 @@
             );
         }
 
-        // Enhanced Statistics Component
+        // Statistics Component (unchanged logic)
         function Statistics({ workouts, whoopData, appleHealthData, tremorData, userFTP, thresholdMethod, thresholdPace }) {
             const [currentDate, setCurrentDate] = useState(new Date());
             const [viewType, setViewType] = useState('month');
@@ -1576,9 +1412,73 @@
             });
 
             function handleDataUpdate(source, data) {
+                // NEW: master_daily.csv path
+                if (source === 'masterDaily') {
+                    const workouts = [];
+                    const whoopData = [];
+                    const appleHealthData = [];
+                    const tremorData = []; // currently unused
+
+                    data.forEach(row => {
+                        const dateStr = row.date;
+                        if (!dateStr) return;
+
+                        // Workouts (Concept2 daily)
+                        const distance = Number(row.c2_distance_m) || 0;
+                        const time = Number(row.c2_work_time_s) || 0;
+                        const watts = Number(row.c2_avg_watts) || 0;
+                        if (distance > 0 || time > 0) {
+                            workouts.push({
+                                date: new Date(dateStr).toISOString(),
+                                distance,
+                                time,
+                                watts
+                            });
+                        }
+
+                        // Whoop daily (recovery, sleep, strain)
+                        const recovery = Number(row.whoop_recovery_pct) || 0;
+                        const sleep_score = Number(row.whoop_sleep_performance_pct || row.whoop_sleep_efficiency_pct) || 0;
+                        const strain = Number(row.whoop_day_strain || row.whoop_activity_strain) || 0;
+                        if (recovery || sleep_score || strain) {
+                            whoopData.push({
+                                date: dateStr,
+                                recovery,
+                                sleep_score,
+                                strain
+                            });
+                        }
+
+                        // Apple Health daily (walking metrics)
+                        const walking_speed = Number(row["apple_Walking speed(mi/hr)"]) || null;
+                        const step_length = Number(row["apple_Walking step length(in)"]) || null;
+                        const double_support = Number(row["apple_Walking double support percentage(%)"]) || null;
+
+                        if (walking_speed != null || step_length != null || double_support != null) {
+                            appleHealthData.push({
+                                date: dateStr,
+                                steps: null, // no explicit step count in Export.csv
+                                walking_speed,
+                                step_length,
+                                double_support
+                            });
+                        }
+                    });
+
+                    setAllData({ workouts, whoopData, appleHealthData, tremorData });
+                    return;
+                }
+
+                // Existing per-source mapping
                 setAllData(prev => ({
                     ...prev,
-                    [source === 'concept2' ? 'workouts' : source === 'whoop' ? 'whoopData' : source === 'appleHealth' ? 'appleHealthData' : 'tremorData']: data
+                    [source === 'concept2'
+                        ? 'workouts'
+                        : source === 'whoop'
+                            ? 'whoopData'
+                            : source === 'appleHealth'
+                                ? 'appleHealthData'
+                                : 'tremorData']: data
                 }));
             }
 
