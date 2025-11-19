@@ -444,6 +444,64 @@
       color: var(--muted);
     }
 
+    /* QoL summary card */
+    .summary-card {
+      margin-top: 4px;
+    }
+
+    .summary-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 80px;
+      margin-top: 4px;
+      padding: 0 4px;
+    }
+
+    .summary-bar-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 2px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .summary-bar {
+      width: 100%;
+      border-radius: 999px 999px 4px 4px;
+      background: #4b5563;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .summary-bar-count {
+      position: absolute;
+      top: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      color: #0b1120;
+      font-weight: 600;
+      text-shadow: 0 0 4px rgba(15, 23, 42, 0.6);
+    }
+
+    .summary-legend {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: left;
+    }
+
+    .summary-legend strong {
+      color: var(--text);
+    }
+
     @media (max-width: 400px) {
       .app-header {
         flex-direction: column;
@@ -638,14 +696,13 @@
       const selectedKey = toDateKey(selectedDate);
 
       const firstOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-      const firstDayIndex = (firstOfMonth.getDay() + 6) % 7; // make Monday=0 if you want; here we keep Sunday=0
+      const firstDayIndex = firstOfMonth.getDay(); // Sunday=0
       const daysInMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).getDate();
 
       const weeks = [];
       let currentDay = 1;
       let started = false;
 
-      // We’ll render 6 rows max
       for (let week = 0; week < 6; week++) {
         const row = [];
         for (let dow = 0; dow < 7; dow++) {
@@ -713,16 +770,16 @@
       const height = 260;
       const cx = width / 2;
       const cy = height / 2;
-      const rOuter = 110;
+      const rOuter = 105;
       const rInner = 70;
       const segmentCount = 12;
 
       const segments = day.segments;
 
-      // For med rays, convert HH:MM to angle
       function angleForTimeStr(timeStr) {
         const minutes = parseTimeToMinutes(timeStr);
         const fraction = minutes / (24 * 60);
+        // midnight (0) at top -> -π/2
         return fraction * Math.PI * 2 - Math.PI / 2;
       }
 
@@ -752,11 +809,10 @@
 
               const path = describeDonutSegment(cx, cy, rInner, rOuter, startAngle, endAngle);
 
-              // center for icons
               const midAngle = (startAngle + endAngle) / 2;
               const iconRadius = (rInner + rOuter) / 2;
               const tx = cx + iconRadius * Math.cos(midAngle);
-              const ty = cy + iconRadius * Math.sin(midAngle) + 4; // small vertical tweak
+              const ty = cy + iconRadius * Math.sin(midAngle) + 4;
 
               let icon = "";
               if (seg.type === "sleep") icon = "😴";
@@ -784,16 +840,41 @@
               );
             })}
 
+            {/* Time labels around the ring (start time of each 2h segment) */}
+            {segments.map((_, idx) => {
+              const startFrac = idx / segmentCount;
+              const angle = startFrac * Math.PI * 2 - Math.PI / 2;
+              const labelRadius = rOuter + 12;
+              const x = cx + labelRadius * Math.cos(angle);
+              const y = cy + labelRadius * Math.sin(angle) + 3;
+
+              const startHour = idx * 2;
+              const label = `${String(startHour).padStart(2, "0")}:00`;
+
+              return (
+                <text
+                  key={`time-label-${idx}`}
+                  x={x}
+                  y={y}
+                  fontSize="9"
+                  textAnchor="middle"
+                  fill="#9ca3af"
+                >
+                  {label}
+                </text>
+              );
+            })}
+
             {/* Center label */}
             <circle cx={cx} cy={cy} r={rInner - 10} fill="#020617" />
             <text x={cx} y={cy - 4} textAnchor="middle" fontSize="11" fill="#9ca3af">
-              1–5 mood
+              QoL 1–5
             </text>
             <text x={cx} y={cy + 10} textAnchor="middle" fontSize="10" fill="#6b7280">
-              tap a segment to rate
+              tap a segment to rate QoL
             </text>
 
-            {/* Med rays */}
+            {/* Med rays & labels */}
             {day.meds.map((t, i) => {
               const angle = angleForTimeStr(t);
               const innerR = rInner * 0.4;
@@ -803,18 +884,32 @@
               const x2 = cx + outerR * Math.cos(angle);
               const y2 = cy + outerR * Math.sin(angle);
 
+              const labelRadius = rOuter + 24;
+              const lx = cx + labelRadius * Math.cos(angle);
+              const ly = cy + labelRadius * Math.sin(angle) + 3;
+
               return (
-                <line
-                  key={`med-${i}-${t}`}
-                  x1={x1}
-                  y1={y1}
-                  x2={x2}
-                  y2={y2}
-                  stroke="#38bdf8"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  opacity="0.9"
-                />
+                <g key={`med-${i}-${t}`}>
+                  <line
+                    x1={x1}
+                    y1={y1}
+                    x2={x2}
+                    y2={y2}
+                    stroke="#38bdf8"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    opacity="0.9"
+                  />
+                  <text
+                    x={lx}
+                    y={ly}
+                    fontSize="9"
+                    textAnchor="middle"
+                    fill="#38bdf8"
+                  >
+                    {t}
+                  </text>
+                </g>
               );
             })}
           </svg>
@@ -856,13 +951,13 @@
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <div className="modal-title">Rate this 2-hour block</div>
+                <div className="modal-title">Rate QoL for this 2-hour block</div>
                 <div style={{ fontSize: "11px", color: "var(--muted)" }}>{label}</div>
               </div>
             </div>
             <div className="modal-body">
               <div style={{ fontSize: "11px", color: "var(--muted)" }}>
-                Use the slider for your overall state, or mark the block as sleep / no data.
+                Use the slider for your overall Quality of Life in this window, or mark it as sleep / no data.
               </div>
               <div className="slider-row">
                 <span style={{ fontSize: "16px" }}>☹️</span>
@@ -1066,6 +1161,77 @@
       );
     }
 
+    function QoLSummaryCard({ day }) {
+      const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      let ratedSegments = 0;
+
+      day.segments.forEach((seg) => {
+        if (seg.type === "rating") {
+          const r = seg.rating ?? 3;
+          counts[r] = (counts[r] || 0) + 1;
+          ratedSegments++;
+        }
+      });
+
+      const maxCount = Math.max(1, ...Object.values(counts));
+      const totalSegments = day.segments.length;
+      const goodOrBetter = (counts[4] || 0) + (counts[5] || 0);
+      const avgQoL = ratedSegments
+        ? (Object.entries(counts).reduce((sum, [r, c]) => sum + Number(r) * c, 0) / ratedSegments)
+        : null;
+
+      return (
+        <div className="card summary-card">
+          <div className="card-header">
+            <div>
+              <div className="card-title">QoL summary</div>
+              <div className="card-subtitle">
+                How today&apos;s 2-hour segments break down by Quality of Life rating.
+              </div>
+            </div>
+          </div>
+          <div className="summary-chart">
+            {[1,2,3,4,5].map((r) => {
+              const count = counts[r] || 0;
+              const heightPct = (count / maxCount) * 100;
+              const barStyle = {
+                height: `${heightPct || 4}%`,
+                background: `linear-gradient(to top, ${ratingColor(r)}, ${ratingColor(r)}dd)`,
+                boxShadow: count
+                  ? `0 0 6px ${ratingColor(r)}55`
+                  : "none",
+              };
+              return (
+                <div key={r} className="summary-bar-wrapper">
+                  <div className="summary-bar" style={barStyle}>
+                    {count > 0 && (
+                      <div className="summary-bar-count">
+                        {count}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <span style={{ color: "#9ca3af" }}>{r}</span><br/>
+                    <span>{faceForRating(r)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="summary-legend">
+            <div>
+              Segments with QoL ≥ 4:&nbsp;
+              <strong>{goodOrBetter}</strong> / {totalSegments}
+            </div>
+            <div>
+              Average QoL (rated segments only):&nbsp;
+              <strong>{avgQoL ? avgQoL.toFixed(2) : "—"}</strong>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     function App() {
       const [settings, setSettings] = useState(loadSettings);
       const [days, setDays] = useState(loadDays);
@@ -1075,11 +1241,13 @@
         open: false,
         index: null,
         label: "",
+        segment: null,
       });
       const [medModalOpen, setMedModalOpen] = useState(false);
 
-      // ensure current day exists
       const dateKey = toDateKey(selectedDate);
+
+      // ensure current day exists
       useEffect(() => {
         setDays((prev) => {
           if (prev[dateKey]) return prev;
@@ -1101,7 +1269,6 @@
       }, [days]);
 
       const day = days[dateKey] || createEmptyDay(dateKey, settings);
-
       const daysWithData = useMemo(() => Object.keys(days), [days]);
 
       const handleSegmentClick = (index, label) => {
@@ -1116,7 +1283,8 @@
 
       const handleSegmentSave = (index, newSeg) => {
         setDays((prev) => {
-          const dayCopy = prev[dateKey] ? { ...prev[dateKey] } : createEmptyDay(dateKey, settings);
+          const existing = prev[dateKey] || createEmptyDay(dateKey, settings);
+          const dayCopy = { ...existing };
           const segs = dayCopy.segments.map((s, i) => (i === index ? { ...newSeg } : s));
           dayCopy.segments = segs;
           const next = { ...prev, [dateKey]: dayCopy };
@@ -1127,7 +1295,8 @@
 
       const handleAddMed = (timeStr) => {
         setDays((prev) => {
-          const dayCopy = prev[dateKey] ? { ...prev[dateKey] } : createEmptyDay(dateKey, settings);
+          const existing = prev[dateKey] || createEmptyDay(dateKey, settings);
+          const dayCopy = { ...existing };
           const meds = [...dayCopy.meds, timeStr].sort();
           dayCopy.meds = meds;
           const next = { ...prev, [dateKey]: dayCopy };
@@ -1155,7 +1324,7 @@
           <header className="app-header">
             <div>
               <div className="app-title">PDayMinder</div>
-              <div className="tagline">Track meds and how you feel, one ring per day.</div>
+              <div className="tagline">Track meds and QoL, one ring per day.</div>
             </div>
             <button
               className={"icon-btn" + (showSettings ? " primary" : "")}
@@ -1194,16 +1363,17 @@
           <div className="card">
             <div className="card-header">
               <div>
-                <div className="card-title">State ring</div>
+                <div className="card-title">QoL ring</div>
                 <div className="card-subtitle">
-                  24 hours in 12 segments. Color from 1 (red) to 5 (green).
+                  24 hours in 12 segments. QoL 1 (red) to 5 (green), with meds as rays.
                 </div>
               </div>
             </div>
             <div className="ring-container">
               <DayRing day={day} onSegmentClick={handleSegmentClick} />
               <div className="ring-caption">
-                Red = low / tough hours. Green = better hours. Gray with 😴 = sleep, gray with ? = no data.
+                Red = tougher hours. Green = better QoL. Gray with 😴 = sleep, gray with ? = no data.
+                Time labels mark the start of each 2-hour segment; med rays are labeled with their times.
               </div>
             </div>
             <div className="controls-row">
@@ -1220,6 +1390,9 @@
             </div>
           </div>
 
+          {/* QoL summary card */}
+          <QoLSummaryCard day={day} />
+
           {/* Settings */}
           {showSettings && (
             <SettingsCard
@@ -1229,7 +1402,7 @@
           )}
 
           <div className="footer-note">
-            All data stays on this device (localStorage). This is a prototype and not medical advice.
+            All data persists in this browser via localStorage. This is a prototype and not medical advice.
           </div>
 
           {/* Modals */}
