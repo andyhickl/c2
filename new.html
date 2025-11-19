@@ -1,520 +1,1258 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rowing Workout Calendar</title>
+  <meta charset="UTF-8" />
+  <title>PDayMinder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- React + Babel from CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    :root{
-      --bg:#0b0d10;--fg:#e8eef5;--muted:#a8b3c2;--card:#151a21;--accent:#6aa9ff;--green:#3fb950;--yellow:#f2cc60;--red:#ff6b6b;
+    :root {
+      color-scheme: light dark;
+      --bg: #0c1116;
+      --card-bg: #111827;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --text: #e5e7eb;
+      --muted: #6b7280;
+      --border: #1f2933;
+      --danger: #ef4444;
+      --ok: #eab308;
+      --good: #22c55e;
     }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;background:var(--bg);color:var(--fg)}
-    header{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,var(--bg),#0b0d10ef 70%,#0b0d1000)}
-    .wrap{max-width:1100px;margin:0 auto;padding:16px}
-    .row{display:flex;gap:12px;flex-wrap:wrap}
-    .card{background:var(--card);border:1px solid #202733;border-radius:14px;padding:14px}
-    .card h3{margin:0 0 8px 0;font-size:16px;color:var(--muted);font-weight:600}
-    input,select,button,textarea{background:#0f1319;border:1px solid #263140;color:var(--fg);border-radius:10px;padding:10px;font-size:14px}
-    input[type="number"]{width:110px}
-    input[type="time"]{width:130px}
-    .btn{cursor:pointer}
-    .btn.primary{background:var(--accent);color:#071625;border:0}
-    .btn.ghost{background:transparent;border-color:#2b3644}
-    .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-    .day{background:#0f1319;border:1px solid #202733;border-radius:10px;min-height:110px;padding:8px;position:relative}
-    .day .date{font-size:12px;color:var(--muted)}
-    .circle{position:absolute;bottom:8px;right:8px;border-radius:999px;opacity:.9;border:1px solid #0003}
-    .day .mini{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.25}
-    .toolbar{display:flex;align-items:center;gap:8px}
-    .toolbar .spacer{flex:1}
-    .notice{color:var(--muted);font-size:12px}
-    .linklike{color:var(--accent);text-decoration:underline;cursor:pointer}
-    dialog{border:0;background:var(--card);color:var(--fg);border-radius:12px;padding:0;max-width:520px;width:90%}
-    dialog header{padding:12px 14px;border-bottom:1px solid #233040}
-    dialog .content{padding:14px}
-    dialog footer{padding:12px 14px;border-top:1px solid #233040;display:flex;gap:8px;justify-content:flex-end}
-    .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .danger{color:#ff8383}
-    .small{font-size:12px;color:var(--muted)}
-    @media (max-width:700px){.grid{grid-template-columns:repeat(7, minmax(40px,1fr))}.day{min-height:90px}}
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    #root {
+      width: 100%;
+    }
+
+    .app-shell {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 12px 12px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 2px 8px;
+    }
+
+    .app-title {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .tagline {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .icon-btn {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--text);
+      padding: 4px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .icon-btn:hover {
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .icon-btn.primary {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), transparent 60%),
+                  radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.12), transparent 55%),
+                  var(--card-bg);
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      padding: 10px 12px 12px;
+      box-shadow:
+        0 18px 45px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(20px);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .card-subtitle {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .day-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .day-nav-btn {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      padding: 4px 8px;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .day-nav-btn:hover {
+      background: rgba(15, 23, 42, 1);
+    }
+
+    .day-nav-date {
+      flex: 1;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .mini-calendar {
+      margin-top: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 6px;
+      background: rgba(15, 23, 42, 0.8);
+      font-size: 11px;
+    }
+
+    .mini-cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .mini-cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+
+    .mini-cal-dayname {
+      text-align: center;
+      color: var(--muted);
+      font-size: 10px;
+      padding-bottom: 2px;
+    }
+
+    .mini-cal-cell {
+      text-align: center;
+      padding: 3px 0;
+      border-radius: 999px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .mini-cal-cell.disabled {
+      opacity: 0.25;
+      cursor: default;
+    }
+
+    .mini-cal-cell.selected {
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+    }
+
+    .mini-cal-cell.today {
+      border: 1px dashed var(--accent);
+    }
+
+    .mini-cal-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--accent);
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .ring-container {
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .ring-wrapper {
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .ring-caption {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .controls-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pill-btn {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      font-size: 12px;
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .pill-btn.primary {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .pill-btn:hover {
+      background: rgba(15, 23, 42, 1);
+    }
+
+    .med-list {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .med-list span {
+      color: var(--text);
+    }
+
+    .settings-card {
+      margin-top: 4px;
+      font-size: 12px;
+    }
+
+    .settings-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .settings-row label {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .settings-input {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 4px 8px;
+      font-size: 12px;
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+    }
+
+    .settings-help {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .settings-pill-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.75);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      padding: 12px;
+      width: min(420px, calc(100% - 24px));
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.85);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .modal-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .modal-body {
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+    }
+
+    .face-display {
+      font-size: 24px;
+      width: 34px;
+      text-align: center;
+    }
+
+    .checkbox-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+    }
+
+    .checkbox-inline {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn-secondary, .btn-primary {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(15, 23, 42, 1);
+    }
+
+    .btn-primary {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .btn-primary:hover {
+      background: rgba(56, 189, 248, 0.25);
+    }
+
+    .quick-times {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .quick-time-pill {
+      border-radius: 999px;
+      border: 1px dashed var(--border);
+      padding: 3px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--muted);
+    }
+
+    .quick-time-pill:hover {
+      border-style: solid;
+      color: var(--text);
+    }
+
+    .footer-note {
+      margin-top: 8px;
+      font-size: 10px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    @media (max-width: 400px) {
+      .app-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+      .settings-row {
+        flex-direction: column;
+      }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <div class="wrap toolbar">
-      <div style="display:flex;align-items:center;gap:10px">
-        <button class="btn" id="prevMonth">◀</button>
-        <h2 id="monthLabel" style="margin:0"></h2>
-        <button class="btn" id="nextMonth">▶</button>
-      </div>
-      <div class="spacer"></div>
-      <button class="btn ghost" id="exportJsonBtn">Export JSON</button>
-      <button class="btn ghost" id="importCsvBtn">Import CSV</button>
-      <button class="btn primary" id="exportIcsBtn">Export ICS</button>
-    </div>
-  </header>
+  <div id="root"></div>
 
-  <main class="wrap" style="display:grid;gap:14px">
-    <section class="card">
-      <h3>Add / Edit Workout</h3>
-      <div class="row">
-        <label>Date<br><input type="date" id="dateInput"></label>
-        <label>Distance (m)<br><input type="number" id="distanceInput" min="1" step="1" placeholder="10000"></label>
-        <label>Total Time (hh:mm:ss)<br><input type="text" id="timeInput" placeholder="0:51:11"></label>
-        <label>Threshold split (/500m)<br><input type="text" id="thresholdInput" value="2:34"></label>
-        <label>Default Calendar Start Time<br><input type="time" id="startTimeInput" value="06:00"></label>
-        <div style="align-self:end;display:flex;gap:8px">
-          <button class="btn primary" id="saveBtn">Save</button>
-          <button class="btn" id="clearFormBtn">Clear</button>
-        </div>
-      </div>
-      <div class="small" id="calcPreview"></div>
-    </section>
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
 
-    <section class="card">
-      <h3>Calendar</h3>
-      <div class="grid" id="calendar"></div>
-      <div class="small" style="margin-top:8px">Circle color = intensity (IF): <span style="color:var(--green)">green</span> &lt;0.75, <span style="color:var(--yellow)">yellow</span> 0.75–0.90, <span style="color:var(--red)">red</span> ≥0.90. Circle size ∝ TSS.</div>
-    </section>
+    // ---------- Utilities ----------
 
-    <section class="card">
-      <h3>Persistence</h3>
-      <div class="row">
-        <div class="notice">All data is saved locally in your browser (localStorage). Use Export to save a JSON/ICS file to your repo for GitHub Pages. (Optional GitHub sync coming soon.)</div>
-      </div>
-    </section>
-  </main>
-
-  <dialog id="editDialog">
-    <header><strong id="dlgTitle">Edit Workout</strong></header>
-    <div class="content">
-      <div class="two">
-        <label>Date<br><input type="date" id="dlgDate"></label>
-        <label>Distance (m)<br><input type="number" id="dlgDistance" min="1" step="1"></label>
-        <label>Total Time (hh:mm:ss)<br><input type="text" id="dlgTime"></label>
-        <label>Threshold split (/500m)<br><input type="text" id="dlgThreshold"></label>
-      </div>
-      <div class="small" id="dlgPreview"></div>
-      <div class="small danger" id="dlgError"></div>
-    </div>
-    <footer>
-      <button class="btn danger" id="deleteBtn">Delete</button>
-      <button class="btn" id="cancelBtn">Cancel</button>
-      <button class="btn primary" id="updateBtn">Update</button>
-    </footer>
-  </dialog>
-
-  <input type="file" accept="text/csv,.csv" id="filePicker" style="display:none" />
-
-  <script>
-    // --- Utility functions ---
-    const pad = n => String(n).padStart(2,'0');
-    function parseHMS(str){
-      if(!str) return NaN;
-      const parts = str.trim().split(':').map(Number);
-      if(parts.some(isNaN)) return NaN;
-      if(parts.length===3){return parts[0]*3600+parts[1]*60+parts[2];}
-      if(parts.length===2){return parts[0]*60+parts[1];}
-      if(parts.length===1){return parts[0];}
-      return NaN;
-    }
-    function parseSplit(str){ // mm:ss
-      return parseHMS(str);
-    }
-    function fmtHMS(sec){
-      sec = Math.round(sec);
-      const h=Math.floor(sec/3600); const m=Math.floor((sec%3600)/60); const s=sec%60;
-      return (h>0? h+':':'')+pad(m)+':'+pad(s);
-    }
-    function fmtSplit(secPer500){
-      const m = Math.floor(secPer500/60), s = Math.round(secPer500%60);
-      return `${m}:${pad(s)}`;
+    function toDateKey(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
     }
 
-    // TSS/IF via pace-based model: IF = (t_th / t_w)^3; TSS = (dur_sec * IF^2 / 3600) * 100
-    function calcStats(distance_m, duration_s, threshSplit_s){
-      if(!distance_m || !duration_s || !threshSplit_s) return null;
-      const splits = duration_s / (distance_m/500);
-      const IF = Math.pow(threshSplit_s / splits, 3);
-      const TSS = (duration_s * IF * IF / 3600) * 100;
-      return {splits, IF, TSS};
+    function fromDateKey(key) {
+      const [y, m, d] = key.split("-").map(Number);
+      return new Date(y, m - 1, d);
     }
 
-    // Storage
-    const STORE_KEY = 'rowing_calendar_v1';
-    const SETTINGS_KEY = 'rowing_calendar_settings_v1';
-
-    function loadData(){
-      try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }catch{ return {}; }
+    function formatPrettyDate(date) {
+      return date.toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
     }
-    function saveData(data){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
 
-    function loadSettings(){
-      const def = { thresholdSplit: '2:34', startTime: '06:00' };
-      try{ return Object.assign(def, JSON.parse(localStorage.getItem(SETTINGS_KEY))||{});}catch{ return def; }
+    function parseTimeToMinutes(timeStr) {
+      const [h, m] = timeStr.split(":").map(Number);
+      if (Number.isNaN(h) || Number.isNaN(m)) return 0;
+      return h * 60 + m;
     }
-    function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
 
-    // State
-    let data = loadData(); // { 'YYYY-MM-DD': {distance, duration, threshold?} }
-    let settings = loadSettings();
-    let current = new Date(); current.setDate(1);
+    function minutesToTimeString(mins) {
+      let m = mins % (24 * 60);
+      if (m < 0) m += 24 * 60;
+      const h = Math.floor(m / 60);
+      const mm = m % 60;
+      return String(h).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+    }
 
-    // Elements
-    const dateInput = document.getElementById('dateInput');
-    const distanceInput = document.getElementById('distanceInput');
-    const timeInput = document.getElementById('timeInput');
-    const thresholdInput = document.getElementById('thresholdInput');
-    const startTimeInput = document.getElementById('startTimeInput');
-    const saveBtn = document.getElementById('saveBtn');
-    const clearFormBtn = document.getElementById('clearFormBtn');
-    const calcPreview = document.getElementById('calcPreview');
-
-    const prevMonthBtn = document.getElementById('prevMonth');
-    const nextMonthBtn = document.getElementById('nextMonth');
-    const monthLabel = document.getElementById('monthLabel');
-    const calendar = document.getElementById('calendar');
-
-    const exportJsonBtn = document.getElementById('exportJsonBtn');
-    const importJsonBtn = document.getElementById('importJsonBtn');
-    const exportIcsBtn = document.getElementById('exportIcsBtn');
-    const filePicker = document.getElementById('filePicker');
-
-    const dlg = document.getElementById('editDialog');
-    const dlgTitle = document.getElementById('dlgTitle');
-    const dlgDate = document.getElementById('dlgDate');
-    const dlgDistance = document.getElementById('dlgDistance');
-    const dlgTime = document.getElementById('dlgTime');
-    const dlgThreshold = document.getElementById('dlgThreshold');
-    const dlgPreview = document.getElementById('dlgPreview');
-    const dlgError = document.getElementById('dlgError');
-    const updateBtn = document.getElementById('updateBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const deleteBtn = document.getElementById('deleteBtn');
-
-    // Init inputs
-    const today = new Date();
-    dateInput.valueAsDate = today;
-    thresholdInput.value = settings.thresholdSplit;
-    startTimeInput.value = settings.startTime;
-
-    function ymd(d){ return d.toISOString().slice(0,10); }
-
-    function renderMonth(){
-      const year = current.getFullYear();
-      const month = current.getMonth();
-      const tmp = new Date(year, month, 1);
-      monthLabel.textContent = tmp.toLocaleString(undefined,{month:'long',year:'numeric'});
-      calendar.innerHTML = '';
-
-      const firstDay = new Date(year, month, 1);
-      const startWeekday = (firstDay.getDay()+6)%7; // make Monday=0 if you want; using Monday start here
-      const daysInMonth = new Date(year, month+1, 0).getDate();
-
-      // Add leading blanks
-      for(let i=0;i<startWeekday;i++){
-        const cell = document.createElement('div');
-        cell.className='day';
-        calendar.appendChild(cell);
+    function isMinuteInSleep(minute, settings) {
+      const start = parseTimeToMinutes(settings.sleepStart);
+      const end = parseTimeToMinutes(settings.sleepEnd);
+      if (start === end) return false;
+      if (start < end) {
+        return minute >= start && minute < end;
+      } else {
+        // crosses midnight
+        return minute >= start || minute < end;
       }
+    }
 
-      for(let day=1; day<=daysInMonth; day++){
-        const d = new Date(year, month, day);
-        const key = ymd(d);
-        const cell = document.createElement('div');
-        cell.className='day';
-        const head = document.createElement('div'); head.className='date'; head.textContent = day; cell.appendChild(head);
+    // ---------- Colors & faces ----------
 
-        if(data[key]){
-          const e = data[key];
-          const threshold_s = parseSplit(e.threshold || settings.thresholdSplit);
-          const stats = calcStats(e.distance, e.duration, threshold_s);
-          if(stats){
-            const mini = document.createElement('div'); mini.className='mini';
-            mini.innerHTML = `⏱️ ${fmtHMS(e.duration)} · 📏 ${e.distance.toLocaleString()}m<br>⚡ ${fmtSplit(stats.splits)}/500m · IF ${stats.IF.toFixed(2)} · TSS ${Math.round(stats.TSS)}`;
-            cell.appendChild(mini);
+    function ratingColor(rating) {
+      switch (rating) {
+        case 1: return "#ef4444"; // red
+        case 2: return "#f97316"; // orange
+        case 3: return "#eab308"; // yellow
+        case 4: return "#22c55e"; // light green
+        case 5: return "#16a34a"; // green
+        default: return "#374151"; // slate
+      }
+    }
 
-            const circle = document.createElement('div'); circle.className='circle';
-            let color = 'var(--green)';
-            if(stats.IF>=0.90) color = 'var(--red)'; else if(stats.IF>=0.75) color = 'var(--yellow)';
-            const size = Math.max(10, Math.min(80, Math.sqrt(stats.TSS||1)*4));
-            circle.style.width = circle.style.height = size+'px';
-            circle.style.background = color;
-            cell.appendChild(circle);
+    function faceForRating(r) {
+      switch (r) {
+        case 1: return "😫";
+        case 2: return "😟";
+        case 3: return "😐";
+        case 4: return "🙂";
+        case 5: return "😄";
+        default: return "🙂";
+      }
+    }
 
-            cell.style.cursor='pointer';
-            cell.addEventListener('click', ()=> openEdit(key));
-          } else {
-            cell.addEventListener('click', ()=> openEdit(key));
+    // ---------- Donut path helper ----------
+
+    function describeDonutSegment(cx, cy, rInner, rOuter, startAngle, endAngle) {
+      const x0 = cx + rOuter * Math.cos(startAngle);
+      const y0 = cy + rOuter * Math.sin(startAngle);
+      const x1 = cx + rOuter * Math.cos(endAngle);
+      const y1 = cy + rOuter * Math.sin(endAngle);
+      const x2 = cx + rInner * Math.cos(endAngle);
+      const y2 = cy + rInner * Math.sin(endAngle);
+      const x3 = cx + rInner * Math.cos(startAngle);
+      const y3 = cy + rInner * Math.sin(startAngle);
+      const largeArc = endAngle - startAngle <= Math.PI ? 0 : 1;
+
+      return [
+        "M", x0, y0,
+        "A", rOuter, rOuter, 0, largeArc, 1, x1, y1,
+        "L", x2, y2,
+        "A", rInner, rInner, 0, largeArc, 0, x3, y3,
+        "Z"
+      ].join(" ");
+    }
+
+    // ---------- Default settings ----------
+
+    const DEFAULT_SETTINGS = {
+      sleepStart: "23:00",
+      sleepEnd: "06:00",
+      medTimes: ["08:00", "14:00", "20:00"],
+    };
+
+    // ---------- Local storage ----------
+
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem("pdayminder-settings");
+        if (!raw) return DEFAULT_SETTINGS;
+        const parsed = JSON.parse(raw);
+        return {
+          sleepStart: parsed.sleepStart || DEFAULT_SETTINGS.sleepStart,
+          sleepEnd: parsed.sleepEnd || DEFAULT_SETTINGS.sleepEnd,
+          medTimes: Array.isArray(parsed.medTimes) && parsed.medTimes.length === 3
+            ? parsed.medTimes
+            : DEFAULT_SETTINGS.medTimes,
+        };
+      } catch {
+        return DEFAULT_SETTINGS;
+      }
+    }
+
+    function saveSettings(settings) {
+      localStorage.setItem("pdayminder-settings", JSON.stringify(settings));
+    }
+
+    function loadDays() {
+      try {
+        const raw = localStorage.getItem("pdayminder-days");
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        return parsed || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveDays(days) {
+      localStorage.setItem("pdayminder-days", JSON.stringify(days));
+    }
+
+    // ---------- Day model helpers ----------
+
+    // Segment types: "empty" | "rating" | "sleep" | "noData"
+    function createEmptyDay(dateKey, settings) {
+      const segments = Array.from({ length: 12 }, (_, idx) => ({
+        type: "empty",
+        rating: 3,
+      }));
+      // Mark sleep segments based on settings
+      segments.forEach((seg, idx) => {
+        const midMinute = idx * 120 + 60;
+        if (isMinuteInSleep(midMinute, settings)) {
+          seg.type = "sleep";
+        }
+      });
+      return {
+        dateKey,
+        segments,
+        meds: [], // times as "HH:MM"
+      };
+    }
+
+    function ensureDay(days, dateKey, settings) {
+      if (days[dateKey]) return days[dateKey];
+      const day = createEmptyDay(dateKey, settings);
+      return day;
+    }
+
+    // ---------- Components ----------
+
+    function MiniCalendar({ selectedDate, daysWithData, onSelect }) {
+      const todayKey = toDateKey(new Date());
+      const selectedKey = toDateKey(selectedDate);
+
+      const firstOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+      const firstDayIndex = (firstOfMonth.getDay() + 6) % 7; // make Monday=0 if you want; here we keep Sunday=0
+      const daysInMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).getDate();
+
+      const weeks = [];
+      let currentDay = 1;
+      let started = false;
+
+      // We’ll render 6 rows max
+      for (let week = 0; week < 6; week++) {
+        const row = [];
+        for (let dow = 0; dow < 7; dow++) {
+          if (!started && dow === firstDayIndex) {
+            started = true;
           }
+          if (!started || currentDay > daysInMonth) {
+            row.push(null);
+          } else {
+            row.push(currentDay);
+            currentDay++;
+          }
+        }
+        weeks.push(row);
+      }
+
+      const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
+
+      return (
+        <div className="mini-calendar">
+          <div className="mini-cal-header">
+            <span>{selectedDate.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</span>
+            <span style={{ color: "var(--muted)", fontSize: "11px" }}>
+              • days with a blue dot have entries
+            </span>
+          </div>
+          <div className="mini-cal-grid">
+            {dayNames.map((d) => (
+              <div key={d} className="mini-cal-dayname">{d}</div>
+            ))}
+            {weeks.map((row, ri) =>
+              row.map((d, di) => {
+                if (!d) {
+                  return <div key={`${ri}-${di}`} className="mini-cal-cell disabled"></div>;
+                }
+                const dateObj = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), d);
+                const key = toDateKey(dateObj);
+                const hasData = daysWithData.includes(key);
+                const isSelected = key === selectedKey;
+                const isToday = key === todayKey;
+                const cls = [
+                  "mini-cal-cell",
+                  isSelected ? "selected" : "",
+                  isToday ? "today" : "",
+                ].join(" ");
+                return (
+                  <div
+                    key={`${ri}-${di}`}
+                    className={cls}
+                    onClick={() => onSelect(dateObj)}
+                  >
+                    {d}
+                    {hasData && <div className="mini-cal-dot"></div>}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function DayRing({ day, onSegmentClick }) {
+      const width = 260;
+      const height = 260;
+      const cx = width / 2;
+      const cy = height / 2;
+      const rOuter = 110;
+      const rInner = 70;
+      const segmentCount = 12;
+
+      const segments = day.segments;
+
+      // For med rays, convert HH:MM to angle
+      function angleForTimeStr(timeStr) {
+        const minutes = parseTimeToMinutes(timeStr);
+        const fraction = minutes / (24 * 60);
+        return fraction * Math.PI * 2 - Math.PI / 2;
+      }
+
+      return (
+        <div className="ring-wrapper">
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            style={{ width: "100%", display: "block" }}
+          >
+            {/* Segments */}
+            {segments.map((seg, idx) => {
+              const startFrac = idx / segmentCount;
+              const endFrac = (idx + 1) / segmentCount;
+              const startAngle = startFrac * Math.PI * 2 - Math.PI / 2;
+              const endAngle = endFrac * Math.PI * 2 - Math.PI / 2;
+
+              let fill = "#1f2933";
+              if (seg.type === "rating") {
+                fill = ratingColor(seg.rating);
+              } else if (seg.type === "sleep") {
+                fill = "#4b5563";
+              } else if (seg.type === "noData") {
+                fill = "#374151";
+              } else {
+                fill = "#111827";
+              }
+
+              const path = describeDonutSegment(cx, cy, rInner, rOuter, startAngle, endAngle);
+
+              // center for icons
+              const midAngle = (startAngle + endAngle) / 2;
+              const iconRadius = (rInner + rOuter) / 2;
+              const tx = cx + iconRadius * Math.cos(midAngle);
+              const ty = cy + iconRadius * Math.sin(midAngle) + 4; // small vertical tweak
+
+              let icon = "";
+              if (seg.type === "sleep") icon = "😴";
+              if (seg.type === "noData") icon = "?";
+
+              const startHour = idx * 2;
+              const endHour = startHour + 2;
+              const label = `${String(startHour).padStart(2,"0")}:00–${String(endHour).padStart(2,"0")}:00`;
+
+              return (
+                <g key={idx} onClick={() => onSegmentClick(idx, label)}>
+                  <path d={path} fill={fill} stroke="#020617" strokeWidth="1" />
+                  {icon && (
+                    <text
+                      x={tx}
+                      y={ty}
+                      fontSize="12"
+                      textAnchor="middle"
+                      fill="#e5e7eb"
+                    >
+                      {icon}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+
+            {/* Center label */}
+            <circle cx={cx} cy={cy} r={rInner - 10} fill="#020617" />
+            <text x={cx} y={cy - 4} textAnchor="middle" fontSize="11" fill="#9ca3af">
+              1–5 mood
+            </text>
+            <text x={cx} y={cy + 10} textAnchor="middle" fontSize="10" fill="#6b7280">
+              tap a segment to rate
+            </text>
+
+            {/* Med rays */}
+            {day.meds.map((t, i) => {
+              const angle = angleForTimeStr(t);
+              const innerR = rInner * 0.4;
+              const outerR = rOuter * 1.05;
+              const x1 = cx + innerR * Math.cos(angle);
+              const y1 = cy + innerR * Math.sin(angle);
+              const x2 = cx + outerR * Math.cos(angle);
+              const y2 = cy + outerR * Math.sin(angle);
+
+              return (
+                <line
+                  key={`med-${i}-${t}`}
+                  x1={x1}
+                  y1={y1}
+                  x2={x2}
+                  y2={y2}
+                  stroke="#38bdf8"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  opacity="0.9"
+                />
+              );
+            })}
+          </svg>
+        </div>
+      );
+    }
+
+    function SegmentModal({ open, segmentIndex, label, segment, onClose, onSave }) {
+      const [rating, setRating] = useState(segment?.rating ?? 3);
+      const [noData, setNoData] = useState(segment?.type === "noData");
+      const [sleep, setSleep] = useState(segment?.type === "sleep");
+
+      useEffect(() => {
+        if (segment) {
+          setRating(segment.rating ?? 3);
+          setNoData(segment.type === "noData");
+          setSleep(segment.type === "sleep");
+        }
+      }, [segmentIndex, segment]);
+
+      if (!open || !segment) return null;
+
+      const handleSave = () => {
+        let newSeg;
+        if (sleep) {
+          newSeg = { type: "sleep", rating };
+        } else if (noData) {
+          newSeg = { type: "noData", rating };
         } else {
-          cell.addEventListener('click', ()=> openNew(key));
+          newSeg = { type: "rating", rating };
         }
+        onSave(segmentIndex, newSeg);
+      };
 
-        calendar.appendChild(cell);
-      }
+      const disableSlider = noData || sleep;
+
+      return (
+        <div className="modal-backdrop" onClick={onClose}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <div className="modal-title">Rate this 2-hour block</div>
+                <div style={{ fontSize: "11px", color: "var(--muted)" }}>{label}</div>
+              </div>
+            </div>
+            <div className="modal-body">
+              <div style={{ fontSize: "11px", color: "var(--muted)" }}>
+                Use the slider for your overall state, or mark the block as sleep / no data.
+              </div>
+              <div className="slider-row">
+                <span style={{ fontSize: "16px" }}>☹️</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  step="1"
+                  value={rating}
+                  disabled={disableSlider}
+                  onChange={(e) => setRating(parseInt(e.target.value, 10))}
+                />
+                <span style={{ fontSize: "16px" }}>😊</span>
+                <div className="face-display">
+                  {sleep ? "😴" : noData ? "?" : faceForRating(rating)}
+                </div>
+              </div>
+              <div className="checkbox-row">
+                <label className="checkbox-inline">
+                  <input
+                    type="checkbox"
+                    checked={noData}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setNoData(checked);
+                      if (checked) setSleep(false);
+                    }}
+                  />
+                  <span>No data for this block (show “?”)</span>
+                </label>
+                <label className="checkbox-inline">
+                  <input
+                    type="checkbox"
+                    checked={sleep}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setSleep(checked);
+                      if (checked) setNoData(false);
+                    }}
+                  />
+                  <span>Sleeping during this block (show 😴)</span>
+                </label>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={onClose}>Cancel</button>
+              <button className="btn-primary" onClick={handleSave}>Save</button>
+            </div>
+          </div>
+        </div>
+      );
     }
 
-    function openNew(key){
-      dateInput.value = key;
-      distanceInput.value = '';
-      timeInput.value = '';
-      thresholdInput.value = settings.thresholdSplit;
-      calcPreview.textContent='';
-      distanceInput.focus();
-    }
+    function MedModal({ open, settings, onClose, onSave }) {
+      const now = new Date();
+      const defaultTime = minutesToTimeString(now.getHours() * 60 + now.getMinutes());
+      const [time, setTime] = useState(defaultTime);
 
-    function openEdit(key){
-      const e = data[key];
-      dlgTitle.textContent = `Edit ${key}`;
-      dlgDate.value = key;
-      dlgDistance.value = e.distance;
-      dlgTime.value = fmtHMS(e.duration);
-      dlgThreshold.value = e.threshold || settings.thresholdSplit;
-      dlgError.textContent='';
-      updateDialogPreview();
-      dlg.showModal();
-    }
-
-    function updateDialogPreview(){
-      const dist = Number(dlgDistance.value);
-      const dur = parseHMS(dlgTime.value);
-      const thr = parseSplit(dlgThreshold.value);
-      const st = calcStats(dist,dur,thr);
-      dlgPreview.textContent = st ? `Split ${fmtSplit(st.splits)} | IF ${st.IF.toFixed(2)} | TSS ${Math.round(st.TSS)}` : '';
-    }
-
-    function updateFormPreview(){
-      const dist = Number(distanceInput.value);
-      const dur = parseHMS(timeInput.value);
-      const thr = parseSplit(thresholdInput.value || settings.thresholdSplit);
-      const st = calcStats(dist,dur,thr);
-      calcPreview.textContent = st ? `Split ${fmtSplit(st.splits)} | IF ${st.IF.toFixed(2)} | TSS ${Math.round(st.TSS)}` : '';
-    }
-
-    distanceInput.addEventListener('input', updateFormPreview);
-    timeInput.addEventListener('input', updateFormPreview);
-    thresholdInput.addEventListener('input', ()=>{ settings.thresholdSplit = thresholdInput.value; saveSettings(settings); updateFormPreview(); renderMonth(); });
-    startTimeInput.addEventListener('input', ()=>{ settings.startTime = startTimeInput.value; saveSettings(settings); });
-
-    saveBtn.addEventListener('click', ()=>{
-      const key = dateInput.value || ymd(new Date());
-      const dist = Number(distanceInput.value);
-      const dur = parseHMS(timeInput.value);
-      if(!key || !dist || !dur){ alert('Please provide date, distance, and time.'); return; }
-      const e = { distance: dist, duration: dur };
-      const thr = thresholdInput.value?.trim();
-      if(thr) e.threshold = thr;
-      data[key] = e; saveData(data);
-      renderMonth();
-      updateFormPreview();
-    });
-
-    clearFormBtn.addEventListener('click', ()=>{ distanceInput.value=''; timeInput.value=''; calcPreview.textContent=''; });
-
-    prevMonthBtn.addEventListener('click', ()=>{ current = new Date(current.getFullYear(), current.getMonth()-1, 1); renderMonth(); });
-    nextMonthBtn.addEventListener('click', ()=>{ current = new Date(current.getFullYear(), current.getMonth()+1, 1); renderMonth(); });
-
-    // Edit dialog events
-    dlgDistance.addEventListener('input', updateDialogPreview);
-    dlgTime.addEventListener('input', updateDialogPreview);
-    dlgThreshold.addEventListener('input', updateDialogPreview);
-
-    cancelBtn.addEventListener('click', ()=> dlg.close());
-    deleteBtn.addEventListener('click', ()=>{
-      const key = dlgDate.value;
-      if(confirm('Delete this entry?')){
-        delete data[key];
-        saveData(data);
-        dlg.close();
-        renderMonth();
-      }
-    });
-
-    updateBtn.addEventListener('click', ()=>{
-      const keyOld = dlgTitle.textContent.replace('Edit ','');
-      const keyNew = dlgDate.value;
-      const dist = Number(dlgDistance.value);
-      const dur = parseHMS(dlgTime.value);
-      if(!keyNew || !dist || !dur){ dlgError.textContent='Please provide date, distance, and time.'; return; }
-      const e = { distance: dist, duration: dur };
-      const thr = dlgThreshold.value?.trim();
-      if(thr) e.threshold = thr;
-      if(keyOld!==keyNew) delete data[keyOld];
-      data[keyNew] = e; saveData(data);
-      dlg.close(); renderMonth();
-    });
-
-    // JSON export
-    exportJsonBtn.addEventListener('click', ()=>{
-      const blob = new Blob([JSON.stringify({data, settings}, null, 2)], {type:'application/json'});
-      const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='rowing_calendar.json'; a.click(); URL.revokeObjectURL(a.href);
-    });
-
-    // CSV import (concept2-season-2026.csv style)
-    const importCsvBtn = document.getElementById('importCsvBtn');
-    importCsvBtn.addEventListener('click', ()=> filePicker.click());
-    filePicker.addEventListener('change', (e)=>{
-      const file = e.target.files[0]; if(!file) return;
-      handleCSVFile(file).catch(err => { console.error(err); alert('CSV import failed: '+err.message); });
-    });
-
-    async function handleCSVFile(file){
-      const text = await file.text();
-      const rows = parseCSV(text);
-      if(!rows.length) throw new Error('No rows found in CSV');
-
-      // Determine if rows contain a date column
-      const hasDate = rows[0] && Object.prototype.hasOwnProperty.call(rows[0],'date');
-      if(!hasDate){
-        // If CSV has no date column, do not drop existing dates per requirement
-        // Try to interpret rows as additional values without dates: abort for safety
-        if(!confirm('CSV has no `date` column — import will be ignored. Continue?')) return;
-      }
-
-      // Ask user whether to replace the entire date range present in the CSV
-      const replaceRange = confirm('Replace entire date range covered by this CSV? (OK = yes — existing entries within that range will be removed)');
-
-      applyCSVRows(rows, { replaceRange });
-    }
-
-    function parseCSV(text){
-      const lines = text.split(/\r?\n/).filter(l=>l.trim()!='');
-      if(!lines.length) return [];
-      const header = lines[0].split(/,|;|\t/).map(h=>h.trim().toLowerCase());
-      const rows = [];
-      for(let i=1;i<lines.length;i++){
-        const cols = lines[i].split(/,|;|\t/).map(c=>c.trim());
-        if(cols.length===0) continue;
-        const row = {};
-        for(let j=0;j<header.length;j++){
-          const key = header[j];
-          if(!key) continue;
-          row[key] = cols[j] || '';
+      useEffect(() => {
+        if (open) {
+          const n = new Date();
+          setTime(minutesToTimeString(n.getHours() * 60 + n.getMinutes()));
         }
-        // normalize date key to 'date' with ISO yyyy-mm-dd if possible
-        if(row.date){
-          const d = new Date(row.date);
-          if(!isNaN(d)) row.date = d.toISOString().slice(0,10);
-        }
-        rows.push(row);
-      }
-      return rows;
+      }, [open]);
+
+      if (!open) return null;
+
+      const handleSave = () => {
+        onSave(time);
+      };
+
+      return (
+        <div className="modal-backdrop" onClick={onClose}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">Log medication</div>
+            </div>
+            <div className="modal-body">
+              <div style={{ fontSize: "11px", color: "var(--muted)" }}>
+                Choose the time you took your PD medication. It defaults to right now, but you can adjust.
+              </div>
+              <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "var(--muted)" }}>Time</span>
+                <input
+                  type="time"
+                  className="settings-input"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                />
+              </label>
+              <div style={{ marginTop: "4px", fontSize: "11px", color: "var(--muted)" }}>
+                Quick fill (prescribed times):
+              </div>
+              <div className="quick-times">
+                {settings.medTimes.map((t, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className="quick-time-pill"
+                    onClick={() => setTime(t)}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={onClose}>Cancel</button>
+              <button className="btn-primary" onClick={handleSave}>Save</button>
+            </div>
+          </div>
+        </div>
+      );
     }
 
-    function applyCSVRows(rows, opts={replaceRange:false}){
-      // rows: array of {date, distance, time, threshold?}
-      // compute min/max dates
-      const dates = rows.map(r=>r.date).filter(Boolean);
-      let minDate=null, maxDate=null;
-      if(dates.length){
-        minDate = dates.reduce((a,b)=> a<b? a:b);
-        maxDate = dates.reduce((a,b)=> a>b? a:b);
-      }
+    function SettingsCard({ settings, onUpdate }) {
+      const [local, setLocal] = useState(settings);
 
-      if(opts.replaceRange && minDate && maxDate){
-        // remove existing entries within range
-        for(const key of Object.keys(data)){
-          if(key >= minDate && key <= maxDate) delete data[key];
-        }
-      }
+      useEffect(() => {
+        setLocal(settings);
+      }, [settings]);
 
-      // apply rows (overwrite any dates present)
-      for(const r of rows){
-        if(!r.date) continue; // skip rows without dates
-        const distance = Number((r.distance||r.m||r.meters||r['distance(m)']||'').replace(/[^0-9.]/g,'')) || 0;
-        // time fields may be 'time' or 'duration' or 'total time' in hh:mm:ss or mm:ss
-        const timeStr = r.time || r.duration || r['total time'] || r['total_time'] || r['total'];
-        const duration = parseHMS(timeStr || r['time'] || r['duration'] || r['total time'] || '');
-        if(!distance || !duration){
-          // skip incomplete rows
-          continue;
-        }
-        const entry = { distance: distance, duration: duration };
-        if(r.threshold) entry.threshold = r.threshold;
-        data[r.date] = entry;
-      }
+      const handleChange = (field, value) => {
+        const next = { ...local, [field]: value };
+        setLocal(next);
+        onUpdate(next);
+      };
 
-      saveData(data);
-      renderMonth();
+      const handleMedTimeChange = (index, value) => {
+        const arr = [...local.medTimes];
+        arr[index] = value;
+        handleChange("medTimes", arr);
+      };
+
+      return (
+        <div className="card settings-card">
+          <div className="card-header">
+            <div>
+              <div className="card-title">Settings</div>
+              <div className="card-subtitle">
+                Defaults for sleep and medication times. New days use these to pre-fill the ring.
+              </div>
+            </div>
+          </div>
+          <div className="settings-row">
+            <label>
+              Sleep start
+              <input
+                type="time"
+                className="settings-input"
+                value={local.sleepStart}
+                onChange={(e) => handleChange("sleepStart", e.target.value)}
+              />
+            </label>
+            <label>
+              Sleep end
+              <input
+                type="time"
+                className="settings-input"
+                value={local.sleepEnd}
+                onChange={(e) => handleChange("sleepEnd", e.target.value)}
+              />
+            </label>
+          </div>
+          <div className="settings-row">
+            <label>
+              Med time 1
+              <input
+                type="time"
+                className="settings-input"
+                value={local.medTimes[0]}
+                onChange={(e) => handleMedTimeChange(0, e.target.value)}
+              />
+            </label>
+            <label>
+              Med time 2
+              <input
+                type="time"
+                className="settings-input"
+                value={local.medTimes[1]}
+                onChange={(e) => handleMedTimeChange(1, e.target.value)}
+              />
+            </label>
+          </div>
+          <div className="settings-row">
+            <label>
+              Med time 3
+              <input
+                type="time"
+                className="settings-input"
+                value={local.medTimes[2]}
+                onChange={(e) => handleMedTimeChange(2, e.target.value)}
+              />
+            </label>
+          </div>
+          <div className="settings-help">
+            Sleep can cross midnight (e.g., 23:00 → 06:00). Any 2-hour segment whose midpoint falls in that window
+            is marked as sleep by default on new days.
+          </div>
+        </div>
+      );
     }
 
-    // (GitHub upload removed) -- file persistence via PAT was removed per user request.
+    function App() {
+      const [settings, setSettings] = useState(loadSettings);
+      const [days, setDays] = useState(loadDays);
+      const [selectedDate, setSelectedDate] = useState(() => new Date());
+      const [showSettings, setShowSettings] = useState(false);
+      const [segmentModalState, setSegmentModalState] = useState({
+        open: false,
+        index: null,
+        label: "",
+      });
+      const [medModalOpen, setMedModalOpen] = useState(false);
 
-    // ICS export (download a file you can commit to your Pages repo)
-    exportIcsBtn.addEventListener('click', ()=>{
-      const ics = buildICS();
-      const blob = new Blob([ics], {type:'text/calendar'});
-      const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='rowing_calendar.ics'; a.click(); URL.revokeObjectURL(a.href);
-    });
+      // ensure current day exists
+      const dateKey = toDateKey(selectedDate);
+      useEffect(() => {
+        setDays((prev) => {
+          if (prev[dateKey]) return prev;
+          const newDay = createEmptyDay(dateKey, settings);
+          const next = { ...prev, [dateKey]: newDay };
+          saveDays(next);
+          return next;
+        });
+      }, [dateKey, settings]);
 
-    function buildICS(){
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-      const lines = [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:-//Rowing Calendar//EN',
-      ];
-      const startTime = settings.startTime || '06:00';
-      const [sh, sm] = startTime.split(':').map(Number);
-      for(const [date, e] of Object.entries(data)){
-        const d = new Date(date+'T00:00:00');
-        d.setHours(sh, sm||0, 0, 0);
-        const dt = toLocalICS(d);
-        const thr = parseSplit(e.threshold || settings.thresholdSplit);
-        const st = calcStats(e.distance, e.duration, thr);
-        const sum = `Row: ${e.distance}m in ${fmtHMS(e.duration)} (${fmtSplit(st.splits)}/500m) — TSS ${Math.round(st.TSS)}, IF ${st.IF.toFixed(2)}`;
-        lines.push(
-          'BEGIN:VEVENT',
-          `UID:${date}-rowing@local`,
-          `DTSTAMP:${toLocalICS(new Date())}`,
-          `DTSTART;TZID=${tz}:${dt}`,
-          `DURATION:${toISODuration(e.duration)}`,
-          `SUMMARY:${escapeICS(sum)}`,
-          `DESCRIPTION:${escapeICS(sum)}`,
-          'END:VEVENT'
-        );
-      }
-      lines.push('END:VCALENDAR');
-      return lines.join('\r\n');
+      // Persist settings
+      useEffect(() => {
+        saveSettings(settings);
+      }, [settings]);
+
+      // Persist days
+      useEffect(() => {
+        saveDays(days);
+      }, [days]);
+
+      const day = days[dateKey] || createEmptyDay(dateKey, settings);
+
+      const daysWithData = useMemo(() => Object.keys(days), [days]);
+
+      const handleSegmentClick = (index, label) => {
+        const seg = day.segments[index];
+        setSegmentModalState({
+          open: true,
+          index,
+          label,
+          segment: seg,
+        });
+      };
+
+      const handleSegmentSave = (index, newSeg) => {
+        setDays((prev) => {
+          const dayCopy = prev[dateKey] ? { ...prev[dateKey] } : createEmptyDay(dateKey, settings);
+          const segs = dayCopy.segments.map((s, i) => (i === index ? { ...newSeg } : s));
+          dayCopy.segments = segs;
+          const next = { ...prev, [dateKey]: dayCopy };
+          return next;
+        });
+        setSegmentModalState((s) => ({ ...s, open: false }));
+      };
+
+      const handleAddMed = (timeStr) => {
+        setDays((prev) => {
+          const dayCopy = prev[dateKey] ? { ...prev[dateKey] } : createEmptyDay(dateKey, settings);
+          const meds = [...dayCopy.meds, timeStr].sort();
+          dayCopy.meds = meds;
+          const next = { ...prev, [dateKey]: dayCopy };
+          return next;
+        });
+        setMedModalOpen(false);
+      };
+
+      const goToOffsetDay = (offset) => {
+        const d = new Date(selectedDate);
+        d.setDate(d.getDate() + offset);
+        setSelectedDate(d);
+      };
+
+      const handleCalendarSelect = (d) => {
+        setSelectedDate(d);
+      };
+
+      const medSummary = day.meds.length
+        ? day.meds.join(", ")
+        : "No meds logged yet";
+
+      return (
+        <div className="app-shell">
+          <header className="app-header">
+            <div>
+              <div className="app-title">PDayMinder</div>
+              <div className="tagline">Track meds and how you feel, one ring per day.</div>
+            </div>
+            <button
+              className={"icon-btn" + (showSettings ? " primary" : "")}
+              onClick={() => setShowSettings((v) => !v)}
+            >
+              <span>⚙️</span>
+              <span>{showSettings ? "Hide settings" : "Settings"}</span>
+            </button>
+          </header>
+
+          {/* Day + calendar card */}
+          <div className="card">
+            <div className="card-header">
+              <div>
+                <div className="card-title">Day view</div>
+                <div className="card-subtitle">One page per day. Arrows or calendar to change.</div>
+              </div>
+            </div>
+            <div className="day-nav">
+              <button className="day-nav-btn" type="button" onClick={() => goToOffsetDay(-1)}>
+                <span>←</span> <span>Prev</span>
+              </button>
+              <div className="day-nav-date">{formatPrettyDate(selectedDate)}</div>
+              <button className="day-nav-btn" type="button" onClick={() => goToOffsetDay(1)}>
+                <span>Next</span> <span>→</span>
+              </button>
+            </div>
+            <MiniCalendar
+              selectedDate={selectedDate}
+              daysWithData={daysWithData}
+              onSelect={handleCalendarSelect}
+            />
+          </div>
+
+          {/* Ring + controls */}
+          <div className="card">
+            <div className="card-header">
+              <div>
+                <div className="card-title">State ring</div>
+                <div className="card-subtitle">
+                  24 hours in 12 segments. Color from 1 (red) to 5 (green).
+                </div>
+              </div>
+            </div>
+            <div className="ring-container">
+              <DayRing day={day} onSegmentClick={handleSegmentClick} />
+              <div className="ring-caption">
+                Red = low / tough hours. Green = better hours. Gray with 😴 = sleep, gray with ? = no data.
+              </div>
+            </div>
+            <div className="controls-row">
+              <button
+                type="button"
+                className="pill-btn primary"
+                onClick={() => setMedModalOpen(true)}
+              >
+                💊 Log medication
+              </button>
+            </div>
+            <div className="med-list">
+              <span>Today&apos;s doses:</span> {medSummary}
+            </div>
+          </div>
+
+          {/* Settings */}
+          {showSettings && (
+            <SettingsCard
+              settings={settings}
+              onUpdate={(next) => setSettings(next)}
+            />
+          )}
+
+          <div className="footer-note">
+            All data stays on this device (localStorage). This is a prototype and not medical advice.
+          </div>
+
+          {/* Modals */}
+          <SegmentModal
+            open={segmentModalState.open}
+            segmentIndex={segmentModalState.index}
+            label={segmentModalState.label}
+            segment={segmentModalState.segment}
+            onClose={() => setSegmentModalState((s) => ({ ...s, open: false }))}
+            onSave={handleSegmentSave}
+          />
+          <MedModal
+            open={medModalOpen}
+            settings={settings}
+            onClose={() => setMedModalOpen(false)}
+            onSave={handleAddMed}
+          />
+        </div>
+      );
     }
 
-    function toISODuration(seconds){
-      const h = Math.floor(seconds/3600), m = Math.floor((seconds%3600)/60), s = Math.floor(seconds%60);
-      return `PT${h? h+'H':''}${m? m+'M':''}${s? s+'S':''}` || 'PT0S';
-    }
-    function toLocalICS(d){ // YYYYMMDDTHHMMSS
-      const yyyy = d.getFullYear();
-      const mm = pad(d.getMonth()+1);
-      const dd = pad(d.getDate());
-      const hh = pad(d.getHours());
-      const mi = pad(d.getMinutes());
-      const ss = pad(d.getSeconds());
-      return `${yyyy}${mm}${dd}T${hh}${mi}${ss}`;
-    }
-    function escapeICS(str){
-      return String(str).replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
-    }
-
-    // Initial render
-    renderMonth();
-    updateFormPreview();
-
-    // Seed calendar with CSV file from repo if present (concept2-season-2026.csv)
-    (async function seedFromRepo(){
-      try{
-        const res = await fetch('concept2-season-2026.csv');
-        if(!res.ok) return;
-        const text = await res.text();
-        const rows = parseCSV(text);
-        if(rows && rows.length){
-          // Apply rows and replace existing entries within the CSV date range
-          applyCSVRows(rows, { replaceRange: true });
-          console.log('Seeded calendar from concept2-season-2026.csv');
-        }
-      }catch(err){ console.warn('No seed CSV found or failed to parse:', err); }
-    })();
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
   </script>
 </body>
 </html>
